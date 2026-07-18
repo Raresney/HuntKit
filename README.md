@@ -2,6 +2,8 @@
 
 **Local bug bounty recon & methodology copilot** — a single-file-friendly Python CLI that orchestrates the standard Kali toolchain, keeps your findings organised per program, and *tells you where to dig next*.
 
+📺 **See it in action:** [DEMO.md](DEMO.md) — full walkthrough against a public test target.
+
 HuntKit does not reinvent scanners. It drives the tools you already use
 (subfinder, httpx, naabu, gau, nuclei, ffuf, dalfox …), stores results in a
 tidy per-program workspace, and layers a **methodology + idea engine** on top
