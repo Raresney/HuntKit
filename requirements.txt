@@ -1,0 +1,3 @@
+# Core HuntKit has ZERO required dependencies (stdlib only).
+# Optional: nicer coloured tables/panels.
+rich>=13.0

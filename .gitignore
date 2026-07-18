@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+# never commit engagement data
+.huntkit/
+workspaces/
+*.report.md
