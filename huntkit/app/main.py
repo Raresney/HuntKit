@@ -151,15 +151,17 @@ def _render_event(event: dict) -> None:
     kind = event.get("event")
     if kind == "stage_start":
         term.step(f"stage: {event['stage']}")
+    elif kind == "stage_resumed":
+        term.info(f"  {event['stage']}: already done — resumed (use --fresh to re-run)")
     elif kind == "plugin_done":
-        term.bullet(f"{event['plugin']}: +{event['new']} new ({event['found']} found)", "ok")
+        term.bullet(f"{event['plugin']}: {event['found']} found", "ok")
     elif kind == "plugin_skip":
         term.bullet(f"{event['plugin']}: skipped ({event['reason']})", "muted")
     elif kind == "stage_done":
         if not event["ran"]:
             term.warn(f"  {event['stage']}: no tool ran — install one to enable this stage")
         else:
-            term.info(f"  {event['stage']}: {event['total']} total")
+            term.info(f"  {event['stage']}: +{event['new']} new, {event['total']} total")
 
 
 @app.command()
@@ -170,10 +172,19 @@ def recon(
         None, "--program", "-p", help="Workspace to use (default: the domain)."
     ),
     stage: str = typer.Option(
-        "all", "--stage", "-s", help="all | subs | live | ports | urls."
+        "all", "--stage", "-s", help="all | subs | resolve | live | ports | urls."
+    ),
+    threads: Optional[int] = typer.Option(
+        None, "--threads", "-t", help="Concurrency (default: config general.threads)."
+    ),
+    fresh: bool = typer.Option(
+        False, "--fresh", help="Ignore saved progress and re-run every stage."
+    ),
+    no_cache: bool = typer.Option(
+        False, "--no-cache", help="Bypass the tool-output cache for this run."
     ),
 ) -> None:
-    """Run the recon pipeline: subdomains -> live -> ports -> urls."""
+    """Run the recon pipeline: subdomains -> resolve -> live -> ports -> urls."""
     app_ctx = ctx.obj
     try:
         domain = v.normalise_domain(domain)
@@ -198,12 +209,16 @@ def recon(
         ws.set_scope([f"*.{domain}"], [])
         term.warn(f"no scope set — limiting to *.{domain}. Refine with `huntkit init`.")
 
+    if fresh:
+        ws.state.reset()
+
     term.banner(f"recon {domain}  ->  {program}")
     stages = None if stage == "all" else [stage]
     summary = run_recon(
         ws, app_ctx.config, domain,
-        stages=stages, runner=app_ctx.runner, registry=app_ctx.registry,
-        on_event=_render_event,
+        stages=stages, resume=not fresh,
+        runner=app_ctx.runner, registry=app_ctx.registry,
+        on_event=_render_event, threads=threads, use_cache=not no_cache,
     )
     _print_summary(summary, ws)
 
@@ -215,8 +230,10 @@ def _pick_program(app_ctx: AppContext, default: str) -> str:
 
 
 def _print_summary(summary: ReconSummary, ws: Workspace) -> None:
-    rows = [(s.stage, str(s.new), str(s.total),
-             ", ".join(s.ran) or "-") for s in summary.stages]
+    rows = []
+    for s in summary.stages:
+        tools = "resumed" if s.resumed else (", ".join(s.ran) or "-")
+        rows.append((s.stage, str(s.new), str(s.total), tools))
     term.print_table("Recon summary", ["stage", "new", "total", "tools"], rows)
     term.ok(f"{summary.total_new} new assets. Files under {ws.root}")
 

@@ -10,6 +10,8 @@ runner = CliRunner()
 @pytest.fixture
 def home(tmp_path, monkeypatch):
     """Isolate workspace root and config away from the real home."""
+    # an ambient HUNTKIT_HOME would win over the config root — clear it
+    monkeypatch.delenv("HUNTKIT_HOME", raising=False)
     monkeypatch.setenv("HUNTKIT_GENERAL_WORKSPACE_PATH", str(tmp_path))
     monkeypatch.setenv("HUNTKIT_CONFIG_HOME", str(tmp_path / "cfg"))
     monkeypatch.chdir(tmp_path)
