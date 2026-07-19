@@ -15,6 +15,7 @@ import typer
 
 from .. import __version__
 from ..core.workspace import Workspace, list_workspaces
+from ..intel import IntelReport, Priority, analyze as run_analyze, save_report
 from ..pipeline import RECON_STAGES, ReconSummary, run_recon
 from ..utils import terminal as term
 from ..utils import validators as v
@@ -236,6 +237,85 @@ def _print_summary(summary: ReconSummary, ws: Workspace) -> None:
         rows.append((s.stage, str(s.new), str(s.total), tools))
     term.print_table("Recon summary", ["stage", "new", "total", "tools"], rows)
     term.ok(f"{summary.total_new} new assets. Files under {ws.root}")
+
+
+# --------------------------------------------------------------------------
+# analyze
+# --------------------------------------------------------------------------
+@app.command()
+def analyze(
+    ctx: typer.Context,
+    program: Optional[str] = typer.Option(
+        None, "--program", "-p", help="Workspace to analyse (default: the only one)."
+    ),
+    top: int = typer.Option(15, "--top", "-n", help="How many hosts / paths to show."),
+) -> None:
+    """Score the recon surface into prioritised hosts and attack paths."""
+    app_ctx = ctx.obj
+    program = program or _pick_program(app_ctx, default="")
+    if not program:
+        term.error("which workspace? pass -p <program> (none, or several, found).")
+        raise typer.Exit(2)
+
+    ws = Workspace.open(program, config=app_ctx.config, base=app_ctx.base)
+    report = run_analyze(ws)
+
+    if not report.signals:
+        term.warn(f"no signals for '{program}' — thin or ungathered recon surface.")
+        term.info(f"gather more:  huntkit recon <domain> -p {program}  (urls & ports help most)")
+        raise typer.Exit(0)
+
+    term.banner(f"intel — {program}")
+    term.info("hosts by priority: " + "  ".join(
+        f"[{p.style}]{p.label}[/{p.style}] {report.summary[p.label]}"
+        for p in sorted(Priority, reverse=True) if report.summary[p.label]
+    ))
+
+    rows = []
+    for h in report.hosts[:top]:
+        pr = h.priority
+        rows.append((
+            h.host, f"[{pr.style}]{pr.label}[/{pr.style}]",
+            str(h.score), str(len(h.signals)),
+            ", ".join(h.playbooks[:4]) or "-",
+        ))
+    term.print_table("Prioritised hosts", ["host", "priority", "score", "signals", "playbooks"], rows)
+
+    _print_notable(report, top)
+    _print_attack_paths(report, top)
+
+    path = save_report(ws, report)
+    term.ok(f"{len(report.signals)} signals across {len(report.hosts)} hosts — wrote {path}")
+
+
+def _print_notable(report: IntelReport, top: int) -> None:
+    """High/Critical single signals — infra exposures that drive priority."""
+    hot = sorted(
+        (s for s in report.signals if int(s.severity) >= 4),
+        key=lambda s: (-int(s.severity), s.host),
+    )
+    if not hot:
+        return
+    rows = [
+        (f"[{s.severity.style}]{s.severity.label}[/{s.severity.style}]",
+         s.host, s.title, s.evidence)
+        for s in hot[:top]
+    ]
+    term.print_table("Notable exposures", ["severity", "host", "finding", "evidence"], rows)
+
+
+def _print_attack_paths(report: IntelReport, top: int) -> None:
+    paths = report.attack_paths()
+    if not paths:
+        return
+    rows = []
+    for p in paths[:top]:
+        where = ", ".join(p.hosts[:3]) + ("  …" if len(p.hosts) > 3 else "")
+        rows.append((
+            p.name, f"[{p.severity.style}]{p.severity.label}[/{p.severity.style}]",
+            str(len(p.hosts)), where,
+        ))
+    term.print_table("Attack paths (highest impact first)", ["playbook", "severity", "hosts", "where"], rows)
 
 
 # --------------------------------------------------------------------------
