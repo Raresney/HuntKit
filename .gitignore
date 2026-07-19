@@ -5,6 +5,13 @@ build/
 dist/
 .venv/
 venv/
+# test / coverage artifacts
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 # never commit engagement data
 .huntkit/
 workspaces/
