@@ -8,10 +8,28 @@ from __future__ import annotations
 
 import os
 import tempfile
+import time
 from pathlib import Path
 from typing import Iterable
 
 ENCODING = "utf-8"
+
+
+def _replace_with_retry(src: str, dst: Path, attempts: int = 5) -> None:
+    """os.replace, retrying transient Windows locks.
+
+    On Windows an antivirus/indexer can briefly hold a freshly written file
+    open, making os.replace fail with PermissionError (WinError 5) even in a
+    single-threaded run. A few short retries make atomic writes reliable.
+    """
+    for i in range(attempts):
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            if i == attempts - 1:
+                raise
+            time.sleep(0.05 * (i + 1))
 
 
 def ensure_dir(path: Path) -> Path:
@@ -36,10 +54,13 @@ def write_text(path: Path, data: str) -> None:
     try:
         with os.fdopen(fd, "w", encoding=ENCODING, newline="\n") as fh:
             fh.write(data)
-        os.replace(tmp, path)
+        _replace_with_retry(tmp, path)
     finally:
         if os.path.exists(tmp):
-            os.unlink(tmp)
+            try:
+                os.unlink(tmp)
+            except OSError:  # pragma: no cover - best-effort cleanup
+                pass
 
 
 def read_lines(path: Path) -> list[str]:
