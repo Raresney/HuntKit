@@ -35,7 +35,9 @@ dev = [
 ]
 
 [project.scripts]
-# Points at the legacy entrypoint until the Typer app lands in phase 3.
+# The Typer app (huntkit.app) is reachable via `python -m huntkit`. The
+# console script stays on the legacy CLI until the new interface reaches
+# parity (scan/report/ideas), so no command regresses mid-redesign.
 huntkit = "huntkit.cli:main"
 
 [project.urls]
