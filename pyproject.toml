@@ -35,7 +35,8 @@ dev = [
 ]
 
 [project.scripts]
-huntkit = "huntkit.cli:app"
+# Points at the legacy entrypoint until the Typer app lands in phase 3.
+huntkit = "huntkit.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/Raresney/HuntKit"

@@ -1,0 +1,49 @@
+# HuntKit configuration — https://github.com/Raresney/HuntKit
+# Place at ~/.config/huntkit/huntkit.yaml (global) or ./huntkit.yaml (project).
+# Every value below is a default; delete what you don't need to override.
+
+general:
+  workspace_path: ~/.huntkit
+  threads: 20
+  rate: 150
+  timeout: 300
+  retry: 1
+  default_report_format: markdown   # markdown | html | json
+  color: true
+
+http:
+  proxy: null                       # e.g. http://127.0.0.1:8080 for Burp
+  user_agent: "HuntKit/0.2 (+https://github.com/Raresney/HuntKit)"
+  headers: {}                       # e.g. { X-Bug-Bounty: my-handle }
+  rate_limit: 150
+  follow_redirects: true
+
+wordlists:
+  dir_fuzz: null                    # e.g. /usr/share/seclists/.../common.txt
+  dns: null
+  params: null
+
+nuclei:
+  templates: null                   # custom template directory
+  severity: low,medium,high,critical
+  extra_args: []
+
+ai:
+  provider: ollama                  # ollama | openai | claude | gemini
+  model: llama3.2
+  endpoint: http://127.0.0.1:11434
+  require_approval: true            # never send recon data without a prompt
+  max_context_items: 40
+
+# Per-tool overrides. Pin a binary path, disable a tool, or append args.
+tools:
+  amass:
+    enabled: true
+    # path: /opt/amass/amass
+    # extra_args: ["-active"]
+
+# Secrets pulled by data-source tools. Prefer env vars: HUNTKIT_APIKEY_<NAME>.
+api_keys: {}
+  # chaos: "..."
+  # github: "..."
+  # shodan: "..."
