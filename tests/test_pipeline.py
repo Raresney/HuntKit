@@ -47,6 +47,38 @@ class StubHttpx(ToolPlugin):
         )
 
 
+class StubDnsx(ToolPlugin):
+    name = "dnsx"
+    category = Category.RESOLVE
+    consumes = Capability.SUBDOMAIN
+    produces = Capability.HOST
+    input_mode = InputMode.STDIN
+
+    def build_args(self, ctx: PluginContext):
+        return []
+
+    def execute(self, ctx: PluginContext) -> PluginResult:
+        # pretend www.* does not resolve — drop it from the live set
+        resolved = [h for h in ctx.inputs if not h.startswith("www.")]
+        return PluginResult(self.name, self.produces, items=resolved, ok=True)
+
+
+class CountingSub(ToolPlugin):
+    name = "subfinder"
+    category = Category.DISCOVERY
+    consumes = Capability.DOMAIN
+    produces = Capability.SUBDOMAIN
+    input_mode = InputMode.TARGET
+    calls = 0
+
+    def build_args(self, ctx: PluginContext):
+        return []
+
+    def execute(self, ctx: PluginContext) -> PluginResult:
+        type(self).calls += 1
+        return PluginResult(self.name, self.produces, items=["api.example.com"], ok=True)
+
+
 def _registry():
     reg = PluginRegistry()
     reg.register(StubSubfinder())
@@ -124,3 +156,56 @@ def test_missing_tools_skip_gracefully(tmp_path):
                         runner=CommandRunner(cfg), registry=PluginRegistry())
     assert ws.read_lines("recon/subdomains.txt") == ["example.com"]  # seed only
     assert all(s.ran == [] for s in summary.stages)
+
+
+def test_dnsx_resolve_narrows_live_set(tmp_path):
+    """dnsx filters the subdomain list before live probing."""
+    reg = PluginRegistry()
+    reg.register(StubSubfinder())
+    reg.register(StubDnsx())
+    reg.register(StubHttpx())
+    ws = _ws(tmp_path)
+    cfg = Config()
+    run_recon(ws, cfg, "example.com", runner=CommandRunner(cfg), registry=reg)
+    resolved = ws.read_lines("recon/resolved.txt")
+    assert "www.example.com" not in resolved   # dropped by dnsx
+    assert "api.example.com" in resolved
+    live = ws.read_lines("recon/live.txt")
+    assert "https://www.example.com" not in live
+
+
+def test_resume_skips_completed_stage(tmp_path):
+    CountingSub.calls = 0
+    reg = PluginRegistry()
+    reg.register(CountingSub())
+    ws = _ws(tmp_path)
+    cfg = Config()
+    run_recon(ws, cfg, "example.com", stages=["subs"],
+              runner=CommandRunner(cfg), registry=reg)
+    assert CountingSub.calls == 1
+    # a second run resumes: the done stage is not executed again
+    summary = run_recon(ws, cfg, "example.com", stages=["subs"],
+                        runner=CommandRunner(cfg), registry=reg)
+    assert CountingSub.calls == 1
+    assert summary.stages[0].resumed is True
+
+
+def test_fresh_reruns_completed_stage(tmp_path):
+    CountingSub.calls = 0
+    reg = PluginRegistry()
+    reg.register(CountingSub())
+    ws = _ws(tmp_path)
+    cfg = Config()
+    run_recon(ws, cfg, "example.com", stages=["subs"],
+              runner=CommandRunner(cfg), registry=reg)
+    run_recon(ws, cfg, "example.com", stages=["subs"], resume=False,
+              runner=CommandRunner(cfg), registry=reg)
+    assert CountingSub.calls == 2
+
+
+def test_threads_option_runs(tmp_path):
+    ws = _ws(tmp_path)
+    cfg = Config()
+    run_recon(ws, cfg, "example.com", threads=4,
+              runner=CommandRunner(cfg), registry=_registry())
+    assert ws.count("recon/subdomains.txt") == 3
