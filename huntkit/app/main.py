@@ -12,10 +12,12 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+from rich.markup import escape
 
 from .. import __version__
 from ..core.workspace import Workspace, list_workspaces
 from ..intel import IntelReport, Priority, analyze as run_analyze, save_report
+from ..knowledge import Playbook, all_playbooks, get_playbook
 from ..pipeline import RECON_STAGES, ReconSummary, run_recon
 from ..utils import terminal as term
 from ..utils import validators as v
@@ -312,10 +314,82 @@ def _print_attack_paths(report: IntelReport, top: int) -> None:
     for p in paths[:top]:
         where = ", ".join(p.hosts[:3]) + ("  …" if len(p.hosts) > 3 else "")
         rows.append((
-            p.name, f"[{p.severity.style}]{p.severity.label}[/{p.severity.style}]",
+            p.playbook, p.name,
+            f"[{p.severity.style}]{p.severity.label}[/{p.severity.style}]",
             str(len(p.hosts)), where,
         ))
-    term.print_table("Attack paths (highest impact first)", ["playbook", "severity", "hosts", "where"], rows)
+    term.print_table("Attack paths (highest impact first)",
+                     ["id", "playbook", "severity", "hosts", "where"], rows)
+    term.info("open a playbook for the how-to:  huntkit playbook <id>")
+
+
+# --------------------------------------------------------------------------
+# playbook (knowledge base)
+# --------------------------------------------------------------------------
+@app.command()
+def playbook(
+    name: Optional[str] = typer.Argument(
+        None, help="Bug-class id (e.g. ssrf). Omit to list every playbook."
+    ),
+    md: bool = typer.Option(
+        False, "--md", help="Print raw Markdown (for reports / copy-paste)."
+    ),
+) -> None:
+    """Show a bug-class playbook: how to find it, payloads, bypasses, refs."""
+    if not name:
+        _list_playbooks()
+        return
+    pb = get_playbook(name)
+    if pb is None:
+        term.error(f"unknown playbook '{name}'.")
+        term.info("pick one:  " + ", ".join(p.id for p in all_playbooks()))
+        raise typer.Exit(2)
+    if md:
+        # raw markdown straight to stdout — no Rich wrapping/markup so long
+        # payload lines stay intact and it copy-pastes clean into a report
+        typer.echo(pb.to_markdown())
+        return
+    _render_playbook(pb)
+
+
+def _list_playbooks() -> None:
+    term.banner("HuntKit playbooks")
+    rows = [
+        (p.id, f"[{p.severity.style}]{p.severity.label}[/{p.severity.style}]", p.title, p.summary)
+        for p in all_playbooks()
+    ]
+    term.print_table("Bug-class knowledge base", ["id", "severity", "class", "what it is"], rows)
+    term.info("detail:  huntkit playbook <id>      e.g.  huntkit playbook ssrf")
+
+
+def _render_playbook(pb: Playbook) -> None:
+    term.banner(pb.title)
+    term.info(
+        f"severity [{pb.severity.style}]{pb.severity.label}[/{pb.severity.style}]"
+        f"  ·  id [bold]{pb.id}[/bold]"
+    )
+    term.console.print(pb.summary)
+    term.console.print(f"[muted]when:[/muted] {escape(pb.when)}")
+
+    if pb.detection:
+        term.step("Detection")
+        for i, item in enumerate(pb.detection, 1):
+            term.bullet(f"{i}. {escape(item)}")
+    if pb.payloads:
+        term.step("Payloads")
+        for p in pb.payloads:
+            term.console.print(f"    [muted]›[/muted] {escape(p)}")
+    if pb.bypasses:
+        term.step("Bypasses")
+        for b in pb.bypasses:
+            term.bullet(escape(b), "muted")
+    if pb.tools:
+        term.step("Go-to tools")
+        term.bullet(", ".join(pb.tools), "ok")
+    if pb.references:
+        term.step("References")
+        for r in pb.references:
+            term.bullet(f"{escape(r.name)} — {r.url}", "info")
 
 
 # --------------------------------------------------------------------------

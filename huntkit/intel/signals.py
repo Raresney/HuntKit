@@ -13,26 +13,21 @@ already gathered and never touches the target.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import IntEnum
 from urllib.parse import parse_qsl, urlsplit
 
+from ..utils.severity import Severity
 
-class Severity(IntEnum):
-    """Ordered so signals can be compared and aggregated numerically."""
-
-    INFO = 1
-    LOW = 2
-    MEDIUM = 3
-    HIGH = 4
-    CRITICAL = 5
-
-    @property
-    def label(self) -> str:
-        return "informational" if self is Severity.INFO else self.name.lower()
-
-    @property
-    def style(self) -> str:  # matches the theme keys in utils.terminal
-        return self.label
+__all__ = [
+    "Severity",
+    "Signal",
+    "Rule",
+    "url_host",
+    "scan_signals",
+    "signals_from_ports",
+    "signals_from_paths",
+    "signals_from_params",
+    "signals_from_labels",
+]
 
 
 @dataclass(frozen=True)
