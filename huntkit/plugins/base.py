@@ -157,8 +157,18 @@ class ToolPlugin(ABC):
         return None
 
     def cache_key(self, ctx: PluginContext) -> Optional[str]:
-        """Content-addressed cache key, or None to disable caching (default)."""
-        return None
+        """Content-addressed cache key, or None to disable caching.
+
+        Active only when the run opts in (``ctx.extra["use_cache"]``). The key
+        binds the binary, its arguments, and the stdin payload, so identical
+        invocations hit the cache and any change misses it.
+        """
+        if not ctx.extra.get("use_cache"):
+            return None
+        from ..core.cache import make_key
+
+        payload = self.stdin_payload(ctx) or ""
+        return make_key(self.binary, *self.build_args(ctx), payload)
 
     def is_available(self, runner: "CommandRunner") -> bool:
         return runner.available(self.binary)

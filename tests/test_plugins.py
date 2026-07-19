@@ -18,11 +18,11 @@ from huntkit.plugins.nmap import Nmap
 from huntkit.utils.process import ProcResult
 
 EXPECTED = {
-    "subfinder", "assetfinder", "amass",      # discovery
-    "httpx", "whatweb",                        # resolve
-    "naabu", "nmap",                           # ports
-    "gau", "waybackurls", "katana",            # urls
-    "nuclei", "ffuf", "arjun", "dalfox",       # scan
+    "subfinder", "assetfinder", "amass", "findomain", "chaos",  # discovery
+    "httpx", "whatweb", "dnsx",                                  # resolve
+    "naabu", "nmap",                                             # ports
+    "gau", "waybackurls", "katana", "hakrawler",                # urls
+    "nuclei", "ffuf", "arjun", "dalfox",                        # scan
 }
 
 
@@ -179,6 +179,26 @@ class TestExecute:
         assert res.items == ["A.COM"]
         assert res.count == 1
         assert bool(res) is True
+
+
+class TestCaching:
+    def test_cache_key_is_opt_in(self):
+        p = discover().get("subfinder")
+        assert p.cache_key(_ctx(target="x.com")) is None  # off by default
+        key = p.cache_key(_ctx(target="x.com", use_cache=True))
+        assert key
+        # stable for identical invocation, distinct for a different target
+        assert p.cache_key(_ctx(target="x.com", use_cache=True)) == key
+        assert p.cache_key(_ctx(target="y.com", use_cache=True)) != key
+
+
+class TestApiKeyPlugins:
+    def test_chaos_needs_key_and_passes_it(self):
+        p = discover().get("chaos")
+        assert p.needs_api_key == "chaos"
+        cfg = Config.from_dict({"api_keys": {"chaos": "secret"}})
+        args = p.build_args(_ctx(target="x.com", cfg=cfg))
+        assert "secret" in args and "x.com" in args
 
 
 def test_registry_rejects_duplicate():
