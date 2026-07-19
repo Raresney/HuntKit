@@ -21,6 +21,7 @@ from enum import IntEnum
 from pathlib import Path
 
 from ..core.workspace import Workspace
+from ..knowledge.playbooks import titles as _playbook_titles
 from ..utils import filesystem as fs
 from .signals import Severity, Signal, scan_signals, url_host
 
@@ -31,19 +32,10 @@ _PORTS = "recon/ports.txt"
 _SUBS = "recon/subdomains.txt"
 _RESOLVED = "recon/resolved.txt"
 
-# Human names for the bug-class playbook ids used across the catalog. The rich
-# playbook content is the knowledge base's job (phase 6); this is just labels.
-PLAYBOOK_NAMES: dict[str, str] = {
-    "idor": "IDOR / BOLA",
-    "bac": "Broken Access Control",
-    "xss": "Cross-Site Scripting",
-    "ssrf": "SSRF / Open Redirect",
-    "sqli": "SQL / NoSQL Injection",
-    "ssti": "Template Injection / LFI",
-    "subtakeover": "Subdomain Takeover",
-    "authn": "Auth / Session",
-    "cors": "CORS Misconfiguration",
-}
+# Human names for the bug-class playbook ids. The knowledge base owns the
+# playbook catalog, so names come from there — one source of truth, and an
+# attack path in a report links straight to `huntkit playbook <id>`.
+PLAYBOOK_NAMES: dict[str, str] = _playbook_titles()
 
 
 class Priority(IntEnum):
