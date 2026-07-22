@@ -59,13 +59,17 @@ class Playbook:
             "references": [r.to_dict() for r in self.references],
         }
 
-    def to_markdown(self) -> str:
+    def to_markdown(self, level: int = 1) -> str:
         """Render the playbook as a self-contained Markdown document.
 
-        Reused by the reporter (phase 7) and by ``huntkit playbook <id> --md``.
+        ``level`` is the heading depth of the title (1 -> ``#``), so a report
+        can nest a playbook under its own section. Reused by the reporter
+        (phase 7) and by ``huntkit playbook <id> --md``.
         """
+        h1 = "#" * level
+        h2 = "#" * (level + 1)
         out: list[str] = [
-            f"# {self.title}",
+            f"{h1} {self.title}",
             "",
             f"**Severity:** {self.severity.label} &nbsp;·&nbsp; **id:** `{self.id}`",
             "",
@@ -78,19 +82,19 @@ class Playbook:
         def bullets(head: str, items: tuple[str, ...]) -> None:
             if not items:
                 return
-            out.append(f"## {head}")
+            out.append(f"{h2} {head}")
             out.append("")
             out.extend(f"- {item}" for item in items)
             out.append("")
 
         bullets("Detection", self.detection)
         if self.payloads:
-            out += ["## Payloads", "", "```", *self.payloads, "```", ""]
+            out += [f"{h2} Payloads", "", "```", *self.payloads, "```", ""]
         bullets("Bypasses", self.bypasses)
         if self.tools:
-            out += ["## Go-to tools", "", ", ".join(self.tools), ""]
+            out += [f"{h2} Go-to tools", "", ", ".join(self.tools), ""]
         if self.references:
-            out.append("## References")
+            out.append(f"{h2} References")
             out.append("")
             out.extend(f"- [{r.name}]({r.url})" for r in self.references)
             out.append("")
