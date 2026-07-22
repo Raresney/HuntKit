@@ -19,6 +19,7 @@ from ..core.workspace import Workspace, list_workspaces
 from ..intel import IntelReport, Priority, analyze as run_analyze, save_report
 from ..knowledge import Playbook, all_playbooks, get_playbook
 from ..pipeline import RECON_STAGES, ReconSummary, run_recon
+from ..report import FORMATS, build as report_build, normalise_format, write as report_write
 from ..utils import terminal as term
 from ..utils import validators as v
 from .config_cmd import config_app
@@ -321,6 +322,54 @@ def _print_attack_paths(report: IntelReport, top: int) -> None:
     term.print_table("Attack paths (highest impact first)",
                      ["id", "playbook", "severity", "hosts", "where"], rows)
     term.info("open a playbook for the how-to:  huntkit playbook <id>")
+
+
+# --------------------------------------------------------------------------
+# report
+# --------------------------------------------------------------------------
+@app.command()
+def report(
+    ctx: typer.Context,
+    program: Optional[str] = typer.Option(
+        None, "--program", "-p", help="Workspace to report on (default: the only one)."
+    ),
+    fmt: str = typer.Option("md", "--format", "-f", help="md | html | json | pdf."),
+    out: Optional[Path] = typer.Option(
+        None, "--out", "-o", help="Write here instead of the workspace reports/ dir."
+    ),
+) -> None:
+    """Write an engagement report (recon + intel + playbooks) to a file."""
+    app_ctx = ctx.obj
+    canonical = normalise_format(fmt)
+    if canonical is None:
+        term.error(f"unknown format: {fmt}")
+        term.info("choose one:  " + " | ".join(FORMATS))
+        raise typer.Exit(2)
+
+    program = program or _pick_program(app_ctx, default="")
+    if not program:
+        term.error("which workspace? pass -p <program> (none, or several, found).")
+        raise typer.Exit(2)
+
+    ws = Workspace.open(program, config=app_ctx.config, base=app_ctx.base)
+    rep = report_build(ws)
+    if not rep.has_data:
+        term.warn(f"nothing to report for '{program}' — no recon gathered yet.")
+        term.info(f"run:  huntkit recon <domain> -p {program}")
+        raise typer.Exit(0)
+
+    written = report_write(ws, rep, canonical, out)
+
+    term.banner(f"report — {program}")
+    intel = rep.intel
+    if intel.signals:
+        term.info("hosts by priority: " + "  ".join(
+            f"[{p.style}]{p.label}[/{p.style}] {intel.summary[p.label]}"
+            for p in sorted(Priority, reverse=True) if intel.summary[p.label]
+        ))
+    term.ok(f"{canonical} report → {written.path}")
+    if written.note:
+        term.warn(written.note)
 
 
 # --------------------------------------------------------------------------
