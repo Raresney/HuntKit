@@ -16,6 +16,7 @@ from rich.markup import escape
 
 from .. import __version__
 from ..core.workspace import Workspace, list_workspaces
+from ..ai import Advisor, ApprovalDenied, ProviderError, get_provider, provider_names
 from ..intel import IntelReport, Priority, analyze as run_analyze, save_report
 from ..knowledge import Playbook, all_playbooks, get_playbook
 from ..pipeline import RECON_STAGES, ReconSummary, run_recon
@@ -439,6 +440,89 @@ def _render_playbook(pb: Playbook) -> None:
         term.step("References")
         for r in pb.references:
             term.bullet(f"{escape(r.name)} — {r.url}", "info")
+
+
+# --------------------------------------------------------------------------
+# advise (AI)
+# --------------------------------------------------------------------------
+@app.command()
+def advise(
+    ctx: typer.Context,
+    program: Optional[str] = typer.Option(
+        None, "--program", "-p", help="Workspace to advise on (default: the only one)."
+    ),
+    provider: Optional[str] = typer.Option(
+        None, "--provider", help="ollama | claude | openai (default: config ai.provider)."
+    ),
+    model: Optional[str] = typer.Option(
+        None, "--model", "-m", help="Override the provider's default model."
+    ),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Skip the cloud-send confirmation (for scripting)."
+    ),
+) -> None:
+    """Ask a local or cloud LLM to prioritise the recon findings into a plan."""
+    app_ctx = ctx.obj
+    program = program or _pick_program(app_ctx, default="")
+    if not program:
+        term.error("which workspace? pass -p <program> (none, or several, found).")
+        raise typer.Exit(2)
+
+    ws = Workspace.open(program, config=app_ctx.config, base=app_ctx.base)
+    report = run_analyze(ws)
+    if not report.signals:
+        term.warn(f"no findings to advise on for '{program}'.")
+        term.info(f"gather & score first:  huntkit recon <domain> -p {program} && huntkit analyze -p {program}")
+        raise typer.Exit(0)
+
+    name = (provider or app_ctx.config.ai.provider or "ollama").strip().lower()
+    prov = get_provider(name)
+    if prov is None:
+        term.error(f"unknown AI provider: {name}")
+        term.info("choose one:  " + ", ".join(provider_names()))
+        raise typer.Exit(2)
+
+    if not prov.available(app_ctx.config):
+        term.error(f"provider '{name}' is not usable right now.")
+        if prov.is_local:
+            term.info(f"start it:  ollama serve   (endpoint {app_ctx.config.ai.endpoint})")
+        else:
+            term.info(f"set an API key:  export HUNTKIT_APIKEY_{name.upper()}=<key>")
+        raise typer.Exit(1)
+
+    advisor = Advisor(prov, app_ctx.config)
+    model_id = advisor.resolve_model(model)
+    term.banner(f"advise — {program}  ({name} / {model_id})")
+
+    def _approve(payload: str) -> bool:
+        return _confirm_cloud_send(name, prov.endpoint_host(app_ctx.config), model_id, payload, yes)
+
+    try:
+        advice = advisor.advise(report, model=model, approve=_approve)
+    except ApprovalDenied:
+        term.warn("aborted — nothing was sent off your machine.")
+        raise typer.Exit(0)
+    except ProviderError as e:
+        term.error(str(e))
+        raise typer.Exit(1)
+
+    if advice.is_local:
+        term.info(f"local provider — data stayed on {advice.endpoint}")
+    term.step("Advisor")
+    term.console.print(advice.answer, markup=False, highlight=False)
+
+
+def _confirm_cloud_send(provider: str, host: str, model: str, payload: str, assume_yes: bool) -> bool:
+    """Show exactly what will leave the machine, then require a clear yes."""
+    term.warn(f"'{provider}' is a CLOUD model — this sends your recon data to {host}.")
+    term.info(f"model: {model}   destination: {host}")
+    term.console.rule("exact text that will be sent")
+    term.console.print(payload, markup=False, highlight=False)
+    term.console.rule()
+    if assume_yes:
+        term.info("--yes supplied — sending without a prompt.")
+        return True
+    return typer.confirm("Send this recon data to the cloud provider?", default=False)
 
 
 # --------------------------------------------------------------------------
