@@ -8,6 +8,7 @@ new interface reaches parity, the ``huntkit`` console script.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Optional
 
@@ -21,6 +22,8 @@ from ..intel import IntelReport, Priority, analyze as run_analyze, save_report
 from ..knowledge import Playbook, all_playbooks, get_playbook
 from ..pipeline import RECON_STAGES, ReconSummary, run_recon
 from ..report import FORMATS, build as report_build, normalise_format, write as report_write
+from ..secrets import endpoints_from_paths, scan_paths
+from ..utils import filesystem as fs
 from ..utils import terminal as term
 from ..utils import validators as v
 from .config_cmd import config_app
@@ -523,6 +526,58 @@ def _confirm_cloud_send(provider: str, host: str, model: str, payload: str, assu
         term.info("--yes supplied — sending without a prompt.")
         return True
     return typer.confirm("Send this recon data to the cloud provider?", default=False)
+
+
+# --------------------------------------------------------------------------
+# secrets
+# --------------------------------------------------------------------------
+@app.command()
+def secrets(
+    paths: list[Path] = typer.Argument(..., help="Files or directories to scan for leaks."),
+    endpoints: bool = typer.Option(
+        False, "--endpoints", "-e", help="Also extract JS endpoints/paths."
+    ),
+    out: Optional[Path] = typer.Option(
+        None, "--out", "-o", help="Write findings (redacted) as JSON here."
+    ),
+    top: int = typer.Option(50, "--top", "-n", help="Max rows to print."),
+) -> None:
+    """Scan gathered text (JS, configs, dumps) for leaked secrets and endpoints."""
+    missing = [str(p) for p in paths if not p.exists()]
+    if missing:
+        term.error("not found: " + ", ".join(missing))
+        raise typer.Exit(2)
+
+    hits = scan_paths(paths)
+    hits.sort(key=lambda h: (-int(h.severity), h.source, h.line))
+
+    term.banner("secrets scan")
+    if hits:
+        rows = [
+            (f"[{h.severity.style}]{h.severity.label}[/{h.severity.style}]",
+             h.title, f"{h.source}:{h.line}", h.match)
+            for h in hits[:top]
+        ]
+        term.print_table("Potential secrets (redacted)",
+                         ["severity", "type", "where", "match"], rows)
+        term.warn(f"{len(hits)} potential secret(s) — verify before reporting; values are redacted.")
+    else:
+        term.ok("no secrets matched.")
+
+    eps: list[str] = []
+    if endpoints:
+        eps = endpoints_from_paths(paths)
+        if eps:
+            term.step(f"JS endpoints ({len(eps)})")
+            for ep in eps[:top]:
+                term.bullet(escape(ep), "info")
+        else:
+            term.info("no endpoints extracted.")
+
+    if out:
+        payload = {"secrets": [h.to_dict() for h in hits], "endpoints": eps}
+        fs.write_text(out, json.dumps(payload, indent=2))
+        term.ok(f"wrote {out}")
 
 
 # --------------------------------------------------------------------------
