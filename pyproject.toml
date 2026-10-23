@@ -55,13 +55,25 @@ huntkit = ["py.typed", "data/**/*"]
 [tool.ruff]
 line-length = 100
 target-version = "py39"
+# Legacy v0.1 modules are kept importable but not linted (see coverage omit).
+extend-exclude = [
+    "huntkit.py",
+    "huntkit/cli.py", "huntkit/recon.py", "huntkit/scan.py", "huntkit/report.py",
+    "huntkit/tools.py", "huntkit/ui.py", "huntkit/workspace.py",
+    "huntkit/methodology.py", "huntkit/advisor.py",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "C4", "SIM"]
-ignore = ["E501"]  # line length handled by formatter
+# E501: the formatter owns line length. B008: typer.Option()/Argument() in
+# defaults is the framework idiom. UP045: keep Optional[...] so Typer can
+# evaluate command annotations on Python 3.9. SIM105: the stdout-reconfigure
+# try/except/pass is clearer than contextlib.suppress here.
+ignore = ["E501", "B008", "UP045", "SIM105"]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
+exclude = '^huntkit/(cli|recon|scan|report|tools|ui|workspace|methodology|advisor)\.py$'
 warn_unused_ignores = true
 warn_redundant_casts = true
 ignore_missing_imports = true
@@ -73,4 +85,21 @@ addopts = "-q"
 
 [tool.coverage.run]
 source = ["huntkit"]
-omit = ["huntkit/cli.py", "*/__main__.py"]
+# The flat modules below are the legacy v0.1 CLI, superseded by the v0.2
+# sub-packages (core/, pipeline, intel/, report/, …). They are kept importable
+# for backward-compat but excluded from the coverage gate.
+omit = [
+    "*/__main__.py",
+    "huntkit/cli.py",
+    "huntkit/recon.py",
+    "huntkit/scan.py",
+    "huntkit/report.py",
+    "huntkit/tools.py",
+    "huntkit/ui.py",
+    "huntkit/workspace.py",
+    "huntkit/methodology.py",
+    "huntkit/advisor.py",
+]
+
+[tool.coverage.report]
+exclude_also = ["if __name__ == .__main__.:", "raise NotImplementedError"]
