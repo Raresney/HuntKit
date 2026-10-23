@@ -12,8 +12,9 @@ it never touches the target.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Optional
+from typing import Optional
 
 from ..core.config import Config
 from ..intel import IntelReport

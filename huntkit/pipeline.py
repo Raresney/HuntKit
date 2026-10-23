@@ -19,9 +19,10 @@ phase 3; phase 4 filled in the parallelism, resume, and caching behind it.
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
-from typing import Callable, Optional
+from typing import Optional
 
 from .core.config import Config
 from .core.runner import CommandRunner
