@@ -11,7 +11,8 @@ Plugins build an argv and hand it here; they never call subprocess directly.
 from __future__ import annotations
 
 import time
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from typing import Optional
 
 from ..utils import process
 from ..utils.process import ProcResult

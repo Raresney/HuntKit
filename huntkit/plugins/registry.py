@@ -14,7 +14,8 @@ from __future__ import annotations
 import importlib
 import inspect
 import pkgutil
-from typing import TYPE_CHECKING, Iterable, Optional
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Optional
 
 from .base import Capability, Category, ToolPlugin
 
@@ -61,11 +62,11 @@ class PluginRegistry:
     def consuming(self, cap: Capability) -> list[ToolPlugin]:
         return [p for p in self.all() if p.consumes is cap]
 
-    def available(self, runner: "CommandRunner") -> list[ToolPlugin]:
+    def available(self, runner: CommandRunner) -> list[ToolPlugin]:
         """Plugins whose binary is installed / pinned right now."""
         return [p for p in self.all() if p.is_available(runner)]
 
-    def missing(self, runner: "CommandRunner") -> list[ToolPlugin]:
+    def missing(self, runner: CommandRunner) -> list[ToolPlugin]:
         return [p for p in self.all() if not p.is_available(runner)]
 
 

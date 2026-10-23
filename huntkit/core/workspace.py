@@ -54,7 +54,7 @@ class Workspace:
         *,
         config: Config | None = None,
         base: Path | None = None,
-    ) -> "Workspace":
+    ) -> Workspace:
         base = base or default_base(config)
         root = base / sanitize_filename(program)
         ws = cls(program=program, root=root)

@@ -68,7 +68,7 @@ def _write_pdf(ws: Workspace, report: Report, out: Path | None) -> Written:
     html = render.to_html(report)
     target = out or _default_path(ws, "pdf")
     try:
-        import weasyprint  # type: ignore
+        import weasyprint
     except Exception:
         # No PDF backend: write the print-ready HTML and tell the user.
         fallback = target.with_suffix(".html")

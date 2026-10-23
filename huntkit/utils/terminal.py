@@ -9,7 +9,7 @@ onto the ANSI path with UTF-8 output so glyphs never raise.
 from __future__ import annotations
 
 import sys
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
 from rich.console import Console
 from rich.panel import Panel
@@ -20,7 +20,7 @@ from rich.theme import Theme
 # Ensure Unicode never crashes a legacy Windows console (cp1252).
 for _stream in (sys.stdout, sys.stderr):
     try:  # pragma: no cover - platform dependent
-        _stream.reconfigure(encoding="utf-8", errors="replace")
+        _stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
     except Exception:
         pass
 

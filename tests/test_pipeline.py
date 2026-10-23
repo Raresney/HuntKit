@@ -95,7 +95,7 @@ def _ws(tmp_path):
 def test_full_chain_scope_and_dedupe(tmp_path):
     ws = _ws(tmp_path)
     cfg = Config()
-    summary = run_recon(
+    run_recon(
         ws, cfg, "example.com",
         runner=CommandRunner(cfg), registry=_registry(),
     )

@@ -26,7 +26,7 @@ from typing import Callable, Optional
 from .core.config import Config
 from .core.runner import CommandRunner
 from .core.workspace import Workspace
-from .plugins import Capability, PluginContext, PluginResult, get_registry
+from .plugins import Capability, PluginContext, PluginResult, ToolPlugin, get_registry
 from .plugins.registry import PluginRegistry
 
 # Ordered recon stages and the plugins that feed each. Every *available*
@@ -144,7 +144,7 @@ class Pipeline:
         resume: bool,
         summary: ReconSummary,
     ) -> None:
-        tasks: list[tuple[str, object, PluginContext]] = []
+        tasks: list[tuple[str, ToolPlugin, PluginContext]] = []
         to_run: list[str] = []
 
         for stage in wave:

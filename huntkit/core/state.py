@@ -50,7 +50,7 @@ class StageRecord:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "StageRecord":
+    def from_dict(cls, data: dict[str, Any]) -> StageRecord:
         return cls(
             name=data["name"],
             status=StageStatus(data.get("status", "pending")),

@@ -45,7 +45,7 @@ class TestCatalog:
         assert set(PLAYBOOK_NAMES) == set(PLAYBOOKS)
 
     def test_names_sourced_from_knowledge(self):
-        assert PLAYBOOK_NAMES == titles()
+        assert titles() == PLAYBOOK_NAMES
 
     def test_playbooks_are_well_formed(self):
         for pid, pb in PLAYBOOKS.items():

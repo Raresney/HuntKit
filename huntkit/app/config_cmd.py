@@ -45,7 +45,7 @@ def config_show(ctx: typer.Context) -> None:
     config: Config = ctx.obj.config
     data = config.to_dict()
     if data.get("api_keys"):
-        data["api_keys"] = {k: "***" for k in data["api_keys"]}
+        data["api_keys"] = dict.fromkeys(data["api_keys"], "***")
     term.console.print(yaml.safe_dump(data, sort_keys=False, default_flow_style=False).rstrip())
     if config._sources:
         term.info("merged from: " + ", ".join(config._sources))

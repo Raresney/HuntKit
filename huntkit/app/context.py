@@ -35,7 +35,7 @@ class AppContext:
         workspace: Optional[Path] = None,
         verbose: bool = False,
         quiet: bool = False,
-    ) -> "AppContext":
+    ) -> AppContext:
         config = Config.load(config_path)
         level = "DEBUG" if verbose else ("ERROR" if quiet else "INFO")
         setup_logging(level=level, verbose=verbose)

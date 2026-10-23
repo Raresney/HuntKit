@@ -83,8 +83,8 @@ class PluginContext:
     for one-off knobs (e.g. a FUZZ url) without growing this class.
     """
 
-    config: "Config"
-    runner: "CommandRunner"
+    config: Config
+    runner: CommandRunner
     target: Optional[str] = None
     inputs: list[str] = field(default_factory=list)
     extra: dict = field(default_factory=dict)
@@ -133,7 +133,7 @@ class ToolPlugin(ABC):
     # base and any intermediate helpers stay out of the registry.
     def __init_subclass__(cls, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
-        if not getattr(cls, "binary", "") and getattr(cls, "name", ""):
+        if not getattr(cls, "binary", "") and getattr(cls, "name", ""):  # type: ignore[arg-type]
             cls.binary = cls.name
 
     # ---- the two things a plugin must / may define -----------------------
@@ -170,7 +170,7 @@ class ToolPlugin(ABC):
         payload = self.stdin_payload(ctx) or ""
         return make_key(self.binary, *self.build_args(ctx), payload)
 
-    def is_available(self, runner: "CommandRunner") -> bool:
+    def is_available(self, runner: CommandRunner) -> bool:
         return runner.available(self.binary)
 
     # ---- orchestration (do not usually override) -------------------------

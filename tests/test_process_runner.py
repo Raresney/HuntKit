@@ -54,7 +54,7 @@ class TestCommandRunner:
         r = CommandRunner(Config())
         try:
             r.run("nonexistent-binary-xyz", ["--help"])
-            assert False, "should have raised"
+            raise AssertionError("should have raised")
         except ToolNotFound:
             pass
 

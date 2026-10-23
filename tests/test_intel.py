@@ -6,7 +6,6 @@ from typer.testing import CliRunner
 from huntkit.app import app
 from huntkit.core.workspace import Workspace
 from huntkit.intel import (
-    IntelReport,
     Priority,
     Severity,
     Signal,

@@ -34,7 +34,7 @@ class Severity(IntEnum):
         return self.label
 
     @classmethod
-    def from_name(cls, name: str) -> "Severity":
+    def from_name(cls, name: str) -> Severity:
         """Parse a label back into a Severity ('informational'/'info' -> INFO).
 
         The inverse of :attr:`label`, so severities that were serialised to

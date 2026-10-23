@@ -107,11 +107,14 @@ class Advisor:
         ctx = build_context(report, max_items=self.config.ai.max_context_items)
         model_id = self.resolve_model(model)
 
-        if not self.provider.is_local and self.config.ai.require_approval:
-            if approve is None or not approve(ctx):
-                raise ApprovalDenied(
-                    f"sending recon data to '{self.provider.name}' was not approved"
-                )
+        if (
+            not self.provider.is_local
+            and self.config.ai.require_approval
+            and (approve is None or not approve(ctx))
+        ):
+            raise ApprovalDenied(
+                f"sending recon data to '{self.provider.name}' was not approved"
+            )
 
         answer = self.provider.complete(
             SYSTEM_PROMPT, ctx, model=model_id, config=self.config

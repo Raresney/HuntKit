@@ -10,6 +10,7 @@ from __future__ import annotations
 import html as _html
 import json
 import time
+from collections.abc import Sequence
 
 from ..intel import Signal
 from ..knowledge import Playbook
@@ -40,7 +41,7 @@ def to_json(report: Report) -> str:
 # ---------------------------------------------------------------------------
 # Markdown
 # ---------------------------------------------------------------------------
-def _md_table(headers: list[str], rows: list[tuple[str, ...]]) -> list[str]:
+def _md_table(headers: list[str], rows: Sequence[tuple[str, ...]]) -> list[str]:
     out = ["| " + " | ".join(headers) + " |",
            "| " + " | ".join("---" for _ in headers) + " |"]
     out += ["| " + " | ".join(row) + " |" for row in rows]
@@ -160,7 +161,7 @@ def _chip(sev) -> str:
     return f"<span class='sev sev-{sev.style}'>{_html.escape(sev.label)}</span>"
 
 
-def _html_table(headers: list[str], rows: list[tuple[str, ...]]) -> str:
+def _html_table(headers: list[str], rows: Sequence[tuple[str, ...]]) -> str:
     head = "".join(f"<th>{_html.escape(h)}</th>" for h in headers)
     body = "".join(
         "<tr>" + "".join(f"<td>{c}</td>" for c in row) + "</tr>" for row in rows

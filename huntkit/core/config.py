@@ -94,7 +94,7 @@ class Config:
 
     # ---- construction ----------------------------------------------------
     @classmethod
-    def load(cls, explicit_path: Optional[Path] = None) -> "Config":
+    def load(cls, explicit_path: Optional[Path] = None) -> Config:
         cfg = cls()
         for path in _candidate_paths(explicit_path):
             data = _read_yaml(path)
@@ -105,7 +105,7 @@ class Config:
         return cfg
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Config":
+    def from_dict(cls, data: dict[str, Any]) -> Config:
         cfg = cls()
         cfg._merge(data or {})
         return cfg

@@ -16,12 +16,15 @@ import typer
 from rich.markup import escape
 
 from .. import __version__
-from ..core.workspace import Workspace, list_workspaces
 from ..ai import Advisor, ApprovalDenied, ProviderError, get_provider, provider_names
-from ..intel import IntelReport, Priority, analyze as run_analyze, save_report
+from ..core.workspace import Workspace, list_workspaces
+from ..intel import IntelReport, Priority, save_report
+from ..intel import analyze as run_analyze
 from ..knowledge import Playbook, all_playbooks, get_playbook
 from ..pipeline import RECON_STAGES, ReconSummary, run_recon
-from ..report import FORMATS, build as report_build, normalise_format, write as report_write
+from ..report import FORMATS, normalise_format
+from ..report import build as report_build
+from ..report import write as report_write
 from ..secrets import endpoints_from_paths, scan_paths
 from ..utils import filesystem as fs
 from ..utils import terminal as term
@@ -504,10 +507,10 @@ def advise(
         advice = advisor.advise(report, model=model, approve=_approve)
     except ApprovalDenied:
         term.warn("aborted — nothing was sent off your machine.")
-        raise typer.Exit(0)
+        raise typer.Exit(0) from None
     except ProviderError as e:
         term.error(str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     if advice.is_local:
         term.info(f"local provider — data stayed on {advice.endpoint}")

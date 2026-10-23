@@ -7,8 +7,8 @@ from huntkit.ai import (
     build_context,
     make_advisor,
     provider_names,
+    providers,
 )
-from huntkit.ai import providers
 from huntkit.ai.providers import (
     AnthropicProvider,
     OllamaProvider,
