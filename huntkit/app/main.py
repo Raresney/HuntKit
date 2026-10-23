@@ -9,6 +9,7 @@ new interface reaches parity, the ``huntkit`` console script.
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -18,6 +19,7 @@ from rich.markup import escape
 from .. import __version__
 from ..ai import Advisor, ApprovalDenied, ProviderError, get_provider, provider_names
 from ..core.workspace import Workspace, list_workspaces
+from ..fingerprint import fingerprint_headers, has_waf
 from ..intel import IntelReport, Priority, save_report
 from ..intel import analyze as run_analyze
 from ..knowledge import Playbook, all_playbooks, get_playbook
@@ -580,6 +582,49 @@ def secrets(
     if out:
         payload = {"secrets": [h.to_dict() for h in hits], "endpoints": eps}
         fs.write_text(out, json.dumps(payload, indent=2))
+        term.ok(f"wrote {out}")
+
+
+# --------------------------------------------------------------------------
+# fingerprint
+# --------------------------------------------------------------------------
+@app.command()
+def fingerprint(
+    source: str = typer.Argument(
+        "-", help="Header file, or - for stdin (e.g. curl -sI URL | huntkit fingerprint)."
+    ),
+    out: Optional[Path] = typer.Option(
+        None, "--out", "-o", help="Write matches as JSON here."
+    ),
+) -> None:
+    """Identify CDN / WAF / cloud / tech from captured HTTP response headers."""
+    if source == "-":
+        text = sys.stdin.read()
+    else:
+        path = Path(source)
+        if not path.exists():
+            term.error(f"not found: {source}")
+            raise typer.Exit(2)
+        text = path.read_text(encoding="utf-8", errors="ignore")
+
+    matches = fingerprint_headers(text)
+    term.banner("fingerprint")
+    if not matches:
+        term.warn("no CDN/WAF/cloud/tech fingerprints matched.")
+        term.info("feed response headers, e.g.:  curl -sI https://target | huntkit fingerprint")
+        raise typer.Exit(0)
+
+    rows = [
+        (f"[{m.severity.style}]{m.kind}[/{m.severity.style}]", m.name, escape(m.evidence))
+        for m in matches
+    ]
+    term.print_table("Fingerprints", ["kind", "vendor", "evidence"], rows)
+    if has_waf(matches):
+        wafs = ", ".join(m.name for m in matches if m.kind == "waf")
+        term.warn(f"WAF present ({wafs}) — expect filtering; tune payloads/rate and "
+                  "consider origin-IP discovery.")
+    if out:
+        fs.write_text(out, json.dumps([m.to_dict() for m in matches], indent=2))
         term.ok(f"wrote {out}")
 
 

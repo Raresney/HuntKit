@@ -8,10 +8,9 @@ WAF first. Pure: it only reads headers the operator already captured.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Union
 
 from ..utils.severity import Severity
-from .rules import KINDS, FINGERPRINT_RULES
+from .rules import FINGERPRINT_RULES, KINDS
 
 _KIND_ORDER = {k: i for i, k in enumerate(KINDS)}
 
@@ -64,7 +63,7 @@ def _evidence(rule, headers: dict[str, str]) -> str:
     return ""
 
 
-def fingerprint_headers(headers: Union[str, dict]) -> list[FingerprintMatch]:
+def fingerprint_headers(headers: str | dict) -> list[FingerprintMatch]:
     """Return matched vendors for the given headers, WAF first then by kind."""
     hmap = (
         parse_headers(headers) if isinstance(headers, str)

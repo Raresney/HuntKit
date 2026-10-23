@@ -13,7 +13,7 @@ from .engine import (
     has_waf,
     parse_headers,
 )
-from .rules import KINDS, FingerprintRule, FINGERPRINT_RULES
+from .rules import FINGERPRINT_RULES, KINDS, FingerprintRule
 
 __all__ = [
     "FINGERPRINT_RULES",
