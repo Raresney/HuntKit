@@ -185,6 +185,14 @@ CI runs all three on Python 3.10–3.13.
 
 ---
 
+## Acknowledgements
+
+HuntKit's AI advisor (`feat(ai): multi-provider advisor with cloud-approval gate`)
+was selected for the [XERJ Corpus Hub](https://hub.xerj.org) as a reference
+implementation, under this repository's MIT license with attribution.
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
