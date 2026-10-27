@@ -12,6 +12,7 @@ from huntkit.intel import (
     analyze,
     save_report,
     scan_signals,
+    signals_from_findings,
     signals_from_labels,
     signals_from_params,
     signals_from_paths,
@@ -167,6 +168,37 @@ class TestScoring:
         assert h.score == int(Severity.LOW) + int(Severity.HIGH) + int(Severity.MEDIUM)
 
 
+class TestFindingSignals:
+    def test_nuclei_line_severity_and_host(self):
+        line = "[spring-env-actuator] [http] [critical] https://api.example.com/actuator/env"
+        sigs = signals_from_findings({"nuclei": [line]})
+        assert len(sigs) == 1
+        s = sigs[0]
+        assert s.severity is Severity.CRITICAL
+        assert s.host == "api.example.com"
+        assert s.category == "finding"
+        assert s.id == "nuclei-spring-env-actuator"
+
+    def test_nuclei_defaults_to_medium_without_severity_token(self):
+        sigs = signals_from_findings({"nuclei": ["[weird] https://a.example.com/x"]})
+        assert sigs[0].severity is Severity.MEDIUM
+
+    def test_dalfox_is_high_xss(self):
+        sigs = signals_from_findings({"dalfox": ["[POC][G][GET] https://api.example.com/?q=<svg>"]})
+        assert sigs[0].severity is Severity.HIGH
+        assert sigs[0].playbooks == ("xss",)
+        assert sigs[0].id == "dalfox-xss"
+
+    def test_repeated_finding_on_host_collapses(self):
+        line = "[cve-2024-0001] [http] [high] https://api.example.com/a"
+        line2 = "[cve-2024-0001] [http] [high] https://api.example.com/b"
+        sigs = signals_from_findings({"nuclei": [line, line2]})
+        assert len(sigs) == 1 and sigs[0].count == 2
+
+    def test_lines_without_a_url_are_ignored(self):
+        assert signals_from_findings({"nuclei": ["", "no url here", "[info]"]}) == []
+
+
 # ---------------------------------------------------------------------------
 # engine over a workspace
 # ---------------------------------------------------------------------------
@@ -227,6 +259,26 @@ class TestAnalyze:
         data = json.loads(path.read_text(encoding="utf-8"))
         assert data["program"] == "acme"
         assert ws.state.counts["intel_signals"] == len(report.signals)
+
+    def test_scan_findings_fold_into_scoring(self, tmp_path):
+        ws = _seed(tmp_path)
+        # www only had ssh (INFO) -> Low; a critical scan finding must lift it
+        ws.path("scans", "findings.json").write_text(json.dumps({
+            "tools": {"nuclei": [
+                "[cve-2024-9999] [http] [critical] https://www.example.com/rce",
+            ]},
+        }), encoding="utf-8")
+        report = analyze(ws)
+        www = next(h for h in report.hosts if h.host == "www.example.com")
+        assert www.priority is Priority.CRITICAL
+        assert any(s.category == "finding" for s in www.signals)
+
+    def test_malformed_findings_json_is_ignored(self, tmp_path):
+        ws = _seed(tmp_path)
+        ws.path("scans", "findings.json").write_text("{ not json", encoding="utf-8")
+        # analyze still succeeds, just without finding signals
+        report = analyze(ws)
+        assert all(s.category != "finding" for s in report.signals)
 
 
 # ---------------------------------------------------------------------------
