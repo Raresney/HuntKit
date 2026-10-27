@@ -52,6 +52,9 @@ you explicitly approve.
 - **Diff across runs** — `diff` snapshots a program's result set and shows the
   delta on the next sweep: new subdomains, freshly-live URLs, and above all
   **new findings** — the thing you actually re-run a program to catch.
+- **Live dashboard** — `dashboard` paints the whole engagement on one screen
+  (priority, recon surface, top hosts, attack paths, notable exposures,
+  enrichment) and `--watch` redraws it live. Built on Rich — no extra deps.
 
 ---
 
@@ -123,6 +126,7 @@ With a single workspace, `-p` is inferred.
 | `playbook [<id>] [--md]` | List the bug-class knowledge base, or render one playbook. |
 | `report -p <program> [-f md\|html\|json\|pdf]` | Write an engagement report. |
 | `diff -p <program> [--save] [--against <id>] [--list]` | Snapshot the result set and show what changed since a baseline. |
+| `dashboard -p <program> [--watch <secs>]` | One-screen engagement overview; `--watch` redraws it live. |
 | `advise -p <program> [--provider] [--yes]` | LLM action plan (local, or cloud with approval). |
 | `secrets <paths…> [--endpoints] [--out]` | Scan gathered text for leaked secrets + JS endpoints (redacted). |
 | `fingerprint <file\|-> [--out]` | Identify CDN / WAF / cloud / tech from response headers. |
