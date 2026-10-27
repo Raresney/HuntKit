@@ -46,6 +46,9 @@ you explicitly approve.
 - **Asset-correlation enrichment** — `enrich` hashes each origin's favicon
   (the Shodan `http.favicon.hash:` pivot) and maps every host to its ASN /
   BGP prefix, turning one asset into the rest of the estate to sweep.
+- **Screenshot gallery** — `shots` drives `gowitness` over the live URLs and
+  the report embeds the captures as a grid (inlined, so the HTML stays one
+  self-contained file) — eyeball a big surface at a glance.
 
 ---
 
@@ -83,16 +86,19 @@ python -m huntkit scan -p acme
 # 4. enrich: favicon hashes (Shodan pivot) + ASN/BGP origins
 python -m huntkit enrich -p acme
 
-# 5. score the surface into prioritised hosts + attack paths
+# 5. screenshot every live URL (feeds the report gallery)
+python -m huntkit shots -p acme
+
+# 6. score the surface into prioritised hosts + attack paths
 python -m huntkit analyze -p acme
 
-# 6. pull a full playbook for a bug class the analysis points at
+# 7. pull a full playbook for a bug class the analysis points at
 python -m huntkit playbook ssrf
 
-# 7. write a shareable report
+# 8. write a shareable report (embeds the screenshot gallery)
 python -m huntkit report -p acme -f html
 
-# 8. (optional) ask a local LLM to prioritise it
+# 9. (optional) ask a local LLM to prioritise it
 python -m huntkit advise -p acme --provider ollama
 ```
 
@@ -109,6 +115,7 @@ With a single workspace, `-p` is inferred.
 | `recon <domain> [--stage] [--threads] [--fresh] [--no-cache]` | Parallel, resumable recon pipeline. |
 | `scan -p <program> [--tool] [--threads] [--no-cache]` | Run the vuln/fuzz scanners (nuclei, dalfox) over the gathered in-scope URLs. |
 | `enrich -p <program> [--favicon/--no-favicon] [--asn/--no-asn]` | Favicon hashes (Shodan pivot) + ASN/BGP origin per host. |
+| `shots -p <program>` | Screenshot every live in-scope URL (gowitness) for the report gallery. |
 | `analyze -p <program>` | Score hosts Low→Critical and roll signals into attack paths. |
 | `playbook [<id>] [--md]` | List the bug-class knowledge base, or render one playbook. |
 | `report -p <program> [-f md\|html\|json\|pdf]` | Write an engagement report. |
@@ -133,6 +140,7 @@ recon  ──▶  scan  ──▶  intel.analyze  ──▶  report  ──▶  
                               └──────▶ knowledge playbooks (huntkit playbook <id>)
 
 enrich — favicon hashes + ASN/BGP origins over the recon surface (pivot outward)
+shots  — gowitness screenshots of the live URLs, embedded in the HTML report
 secrets / fingerprint — standalone scanners over content you've gathered
 ```
 
@@ -182,9 +190,9 @@ The framework is built around declarative catalogs:
 ├── scope/     in/out scope lists
 ├── recon/     subdomains.txt, resolved.txt, live.txt, ports.txt
 ├── urls/      urls.txt
-├── scans/     intel.json, findings.json, enrich.json, nuclei output …
+├── scans/     intel.json, findings.json, enrich.json, screenshots.json …
 ├── notes/     your own notes
-├── reports/   generated md / html / json
+├── reports/   generated md / html / json  (+ shots/ screenshots)
 └── state.json stage tracking + counts
 ```
 
