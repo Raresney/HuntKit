@@ -49,6 +49,9 @@ you explicitly approve.
 - **Screenshot gallery** — `shots` drives `gowitness` over the live URLs and
   the report embeds the captures as a grid (inlined, so the HTML stays one
   self-contained file) — eyeball a big surface at a glance.
+- **Diff across runs** — `diff` snapshots a program's result set and shows the
+  delta on the next sweep: new subdomains, freshly-live URLs, and above all
+  **new findings** — the thing you actually re-run a program to catch.
 
 ---
 
@@ -119,6 +122,7 @@ With a single workspace, `-p` is inferred.
 | `analyze -p <program>` | Score hosts Low→Critical and roll signals into attack paths. |
 | `playbook [<id>] [--md]` | List the bug-class knowledge base, or render one playbook. |
 | `report -p <program> [-f md\|html\|json\|pdf]` | Write an engagement report. |
+| `diff -p <program> [--save] [--against <id>] [--list]` | Snapshot the result set and show what changed since a baseline. |
 | `advise -p <program> [--provider] [--yes]` | LLM action plan (local, or cloud with approval). |
 | `secrets <paths…> [--endpoints] [--out]` | Scan gathered text for leaked secrets + JS endpoints (redacted). |
 | `fingerprint <file\|-> [--out]` | Identify CDN / WAF / cloud / tech from response headers. |
@@ -142,6 +146,7 @@ recon  ──▶  scan  ──▶  intel.analyze  ──▶  report  ──▶  
 enrich — favicon hashes + ASN/BGP origins over the recon surface (pivot outward)
 shots  — gowitness screenshots of the live URLs, embedded in the HTML report
 secrets / fingerprint — standalone scanners over content you've gathered
+diff   — snapshot the result set and show the delta on the next sweep
 ```
 
 The recon layer is a thin orchestrator over **plugins**; the analysis,
@@ -192,6 +197,7 @@ The framework is built around declarative catalogs:
 ├── urls/      urls.txt
 ├── scans/     intel.json, findings.json, enrich.json, screenshots.json …
 ├── notes/     your own notes
+├── history/   timestamped result snapshots (for `diff`)
 ├── reports/   generated md / html / json  (+ shots/ screenshots)
 └── state.json stage tracking + counts
 ```
