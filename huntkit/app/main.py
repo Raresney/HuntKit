@@ -19,6 +19,7 @@ from rich.markup import escape
 from .. import __version__
 from ..ai import Advisor, ApprovalDenied, ProviderError, get_provider, provider_names
 from ..core.workspace import Workspace, list_workspaces
+from ..enrich import EnrichReport, run_enrich
 from ..fingerprint import fingerprint_headers, has_waf
 from ..intel import IntelReport, Priority, save_report
 from ..intel import analyze as run_analyze
@@ -753,6 +754,85 @@ def fingerprint(
         )
     if out:
         fs.write_text(out, json.dumps([m.to_dict() for m in matches], indent=2))
+        term.ok(f"wrote {out}")
+
+
+# --------------------------------------------------------------------------
+# enrich
+# --------------------------------------------------------------------------
+def _render_enrich_event(event: dict) -> None:
+    kind = event.get("event")
+    if kind == "favicon_start":
+        term.step(f"favicon: hashing {event['targets']} origin(s)")
+    elif kind == "favicon_done":
+        term.bullet(f"favicon: {event['hits']} hash(es)", "ok")
+    elif kind == "asn_start":
+        term.step(f"asn: resolving {event['targets']} host(s) via Team Cymru WHOIS")
+    elif kind == "asn_done":
+        term.bullet(f"asn: {event['hits']} mapping(s)", "ok")
+
+
+@app.command()
+def enrich(
+    ctx: typer.Context,
+    program: Optional[str] = typer.Option(
+        None, "--program", "-p", help="Workspace to enrich (default: the only one)."
+    ),
+    favicon: bool = typer.Option(True, "--favicon/--no-favicon", help="Hash site favicons."),
+    asn: bool = typer.Option(True, "--asn/--no-asn", help="Look up ASN / BGP prefix per host."),
+    threads: int = typer.Option(10, "--threads", "-t", help="Concurrency."),
+    out: Optional[Path] = typer.Option(
+        None, "--out", "-o", help="Also write the report JSON here."
+    ),
+) -> None:
+    """Add favicon hashes (Shodan pivot) and ASN/BGP origins to the recon surface."""
+    app_ctx = ctx.obj
+    program = program or _pick_program(app_ctx, default="")
+    if not program:
+        term.error("which workspace? pass -p <program> (none, or several, found).")
+        raise typer.Exit(2)
+    if not (favicon or asn):
+        term.error("nothing to do — enable at least one of --favicon / --asn.")
+        raise typer.Exit(2)
+
+    ws = Workspace.open(program, config=app_ctx.config, base=app_ctx.base)
+    term.banner(f"enrich — {program}")
+    if asn:
+        term.info(
+            "note: ASN lookup sends each in-scope host's resolved IP to "
+            "whois.cymru.com (public third-party WHOIS)."
+        )
+    report = run_enrich(
+        ws, do_favicon=favicon, do_asn=asn, threads=threads, on_event=_render_enrich_event
+    )
+    _print_enrich(report, ws, out)
+
+
+def _print_enrich(report: EnrichReport, ws: Workspace, out: Optional[Path]) -> None:
+    favs = [f for f in report.favicons if f.ok]
+    if favs:
+        rows = [(escape(f.url), str(f.hash), f.shodan) for f in favs]
+        term.print_table("Favicon hashes", ["origin", "mmh3", "shodan pivot"], rows)
+    asns = [a for a in report.asns if a.ok]
+    if asns:
+        arows = [(escape(a.host), a.ip, f"AS{a.asn}", a.prefix, escape(a.as_name)) for a in asns]
+        term.print_table("ASN origins", ["host", "ip", "asn", "prefix", "network"], arows)
+        if report.unique_asns:
+            term.info(
+                f"{len(report.unique_asns)} unique ASN(s) to sweep: "
+                + ", ".join(f"AS{a}" for a in report.unique_asns)
+            )
+
+    if not favs and not asns:
+        term.warn("no enrichment results — thin recon surface, or hosts unreachable.")
+        term.info(f"gather some first:  huntkit recon <domain> -p {report.program}")
+
+    term.ok(
+        f"favicon: {report.favicon_hits}, asn: {report.asn_hits}. "
+        f"Report: {ws.path('scans', 'enrich.json')}"
+    )
+    if out:
+        fs.write_text(out, Path(ws.path("scans", "enrich.json")).read_text(encoding="utf-8"))
         term.ok(f"wrote {out}")
 
 
