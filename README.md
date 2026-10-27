@@ -28,6 +28,9 @@ you explicitly approve.
   stage resume and an opt-in content-addressed cache.
 - **Pluggable toolchain** — each external tool is one file in `huntkit/plugins/`.
   Adding a tool is dropping a file; the pipeline wires it in by capability.
+- **Active scanning** — `scan` drives the vuln/fuzz plugins (nuclei, dalfox, …)
+  over the URLs recon gathered, **re-checked against scope**, writing findings
+  to the workspace's `scans/` dir.
 - **Intelligence engine** — turns recon output into scored, prioritised hosts and
   **attack paths** (which bug class to run, and where), from a declarative signal
   catalog. Pure and offline — it never touches the target.
@@ -71,16 +74,19 @@ python -m huntkit init acme -s "*.acme.com" -x blog.acme.com
 # 2. run the recon pipeline
 python -m huntkit recon acme.com -p acme
 
-# 3. score the surface into prioritised hosts + attack paths
+# 3. actively scan the gathered URLs (nuclei, dalfox, …)
+python -m huntkit scan -p acme
+
+# 4. score the surface into prioritised hosts + attack paths
 python -m huntkit analyze -p acme
 
-# 4. pull a full playbook for a bug class the analysis points at
+# 5. pull a full playbook for a bug class the analysis points at
 python -m huntkit playbook ssrf
 
-# 5. write a shareable report
+# 6. write a shareable report
 python -m huntkit report -p acme -f html
 
-# 6. (optional) ask a local LLM to prioritise it
+# 7. (optional) ask a local LLM to prioritise it
 python -m huntkit advise -p acme --provider ollama
 ```
 
@@ -95,6 +101,7 @@ With a single workspace, `-p` is inferred.
 | `doctor` | Show which external tools are installed / missing, and where data lives. |
 | `init <program> -s <scope>` | Create a workspace and set in/out scope (`*.wildcards` ok). |
 | `recon <domain> [--stage] [--threads] [--fresh] [--no-cache]` | Parallel, resumable recon pipeline. |
+| `scan -p <program> [--tool] [--threads] [--no-cache]` | Run the vuln/fuzz scanners (nuclei, dalfox) over the gathered in-scope URLs. |
 | `analyze -p <program>` | Score hosts Low→Critical and roll signals into attack paths. |
 | `playbook [<id>] [--md]` | List the bug-class knowledge base, or render one playbook. |
 | `report -p <program> [-f md\|html\|json\|pdf]` | Write an engagement report. |
@@ -112,10 +119,12 @@ Bug classes: `idor`, `bac`, `xss`, `ssrf`, `sqli`, `ssti`, `subtakeover`,
 ## How it fits together
 
 ```
-recon  ──▶  intel.analyze  ──▶  report  ──▶  advise
-(tools)     (signals→score     (md/html/json)  (LLM, gated)
-             →attack paths)          │
-                   └──────▶ knowledge playbooks (huntkit playbook <id>)
+recon  ──▶  scan                         (active: nuclei/dalfox → scans/)
+(tools)       │
+  └──▶  intel.analyze  ──▶  report  ──▶  advise
+        (signals→score     (md/html/json)  (LLM, gated)
+         →attack paths)          │
+               └──────▶ knowledge playbooks (huntkit playbook <id>)
 
 secrets / fingerprint — standalone scanners over content you've gathered
 ```
