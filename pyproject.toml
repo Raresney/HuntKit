@@ -35,10 +35,11 @@ dev = [
 ]
 
 [project.scripts]
-# The Typer app (huntkit.app) is reachable via `python -m huntkit`. The
-# console script stays on the legacy CLI until the new interface reaches
-# parity (scan/report/ideas), so no command regresses mid-redesign.
-huntkit = "huntkit.cli:main"
+# The v0.2 Typer app is the entry point, reachable as both `huntkit` and
+# `python -m huntkit`. It reached parity with the legacy CLI once the `scan`
+# command landed (recon/scan/analyze/report/advise); the old flat `cli.py` is
+# kept importable but no longer wired to the console script.
+huntkit = "huntkit.app.main:run"
 
 [project.urls]
 Homepage = "https://github.com/Raresney/HuntKit"
