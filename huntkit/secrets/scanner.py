@@ -16,10 +16,34 @@ from .patterns import SECRET_PATTERNS, extract_endpoints, shannon_entropy
 
 # Binary / asset extensions never worth scanning as text.
 _SKIP_EXT = {
-    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".bmp", ".svg",
-    ".pdf", ".zip", ".gz", ".tar", ".bz2", ".7z", ".rar",
-    ".woff", ".woff2", ".ttf", ".eot", ".mp4", ".mp3", ".wasm",
-    ".exe", ".dll", ".so", ".dylib", ".class", ".pyc",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
+    ".ico",
+    ".bmp",
+    ".svg",
+    ".pdf",
+    ".zip",
+    ".gz",
+    ".tar",
+    ".bz2",
+    ".7z",
+    ".rar",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".eot",
+    ".mp4",
+    ".mp3",
+    ".wasm",
+    ".exe",
+    ".dll",
+    ".so",
+    ".dylib",
+    ".class",
+    ".pyc",
 }
 _MAX_BYTES = 8 * 1024 * 1024  # skip files larger than 8 MB
 
@@ -31,7 +55,7 @@ class SecretHit:
     severity: Severity
     source: str
     line: int
-    match: str          # redacted — safe to print and store
+    match: str  # redacted — safe to print and store
 
     def to_dict(self) -> dict:
         return {
@@ -65,8 +89,9 @@ def scan_text(text: str, *, source: str = "-") -> list[SecretHit]:
                 if key in seen:
                     continue
                 seen.add(key)
-                hits.append(SecretHit(pat.id, pat.title, pat.severity,
-                                      source, lineno, redact(value)))
+                hits.append(
+                    SecretHit(pat.id, pat.title, pat.severity, source, lineno, redact(value))
+                )
     return hits
 
 

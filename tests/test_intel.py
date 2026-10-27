@@ -29,7 +29,7 @@ runner = CliRunner()
 class TestEnums:
     def test_severity_order_and_labels(self):
         assert Severity.CRITICAL > Severity.HIGH > Severity.MEDIUM > Severity.LOW > Severity.INFO
-        assert Severity.INFO.label == "informational"   # theme key
+        assert Severity.INFO.label == "informational"  # theme key
         assert Severity.HIGH.label == "high"
         assert Severity.CRITICAL.style == "critical"
 
@@ -111,7 +111,7 @@ class TestParamSignals:
 class TestLabelSignals:
     def test_exact_and_prefix_labels(self):
         sigs = {(s.host, s.id) for s in signals_from_labels(["dev01.example.com"])}
-        assert ("dev01.example.com", "nonprod-host") in sigs   # dev -> prefix match
+        assert ("dev01.example.com", "nonprod-host") in sigs  # dev -> prefix match
 
     def test_multiple_labels_one_host(self):
         sigs = {s.id for s in signals_from_labels(["api.dev.example.com"])}
@@ -158,11 +158,14 @@ class TestScoring:
         assert _priority([_sig(Severity.LOW)] * 2) is Priority.MEDIUM
 
     def test_hostintel_playbooks_ordered_by_severity(self):
-        h = HostIntel("h", [
-            _sig(Severity.LOW, ("idor",)),
-            _sig(Severity.HIGH, ("ssrf",)),
-            _sig(Severity.MEDIUM, ("bac", "ssrf")),
-        ])
+        h = HostIntel(
+            "h",
+            [
+                _sig(Severity.LOW, ("idor",)),
+                _sig(Severity.HIGH, ("ssrf",)),
+                _sig(Severity.MEDIUM, ("bac", "ssrf")),
+            ],
+        )
         # ssrf first (from the High signal), then bac; ssrf not repeated
         assert h.playbooks == ["ssrf", "bac", "idor"]
         assert h.score == int(Severity.LOW) + int(Severity.HIGH) + int(Severity.MEDIUM)
@@ -204,23 +207,28 @@ class TestFindingSignals:
 # ---------------------------------------------------------------------------
 def _seed(tmp_path) -> Workspace:
     ws = Workspace.open("acme", base=tmp_path)
-    ws.append_unique("recon/subdomains.txt",
-                     ["api.dev.example.com", "admin.example.com", "www.example.com"])
+    ws.append_unique(
+        "recon/subdomains.txt", ["api.dev.example.com", "admin.example.com", "www.example.com"]
+    )
     ws.append_unique("recon/resolved.txt", ["api.dev.example.com", "admin.example.com"])
-    ws.append_unique("recon/live.txt",
-                     ["https://api.dev.example.com", "https://admin.example.com"])
+    ws.append_unique("recon/live.txt", ["https://api.dev.example.com", "https://admin.example.com"])
     ws.append_unique("recon/ports.txt", ["admin.example.com:6379", "www.example.com:22"])
-    ws.append_unique("urls/urls.txt", [
-        "https://api.dev.example.com/admin?id=5&redirect=http://x",
-        "https://api.dev.example.com/.git/config",
-    ])
+    ws.append_unique(
+        "urls/urls.txt",
+        [
+            "https://api.dev.example.com/admin?id=5&redirect=http://x",
+            "https://api.dev.example.com/.git/config",
+        ],
+    )
     return ws
 
 
 class TestAnalyze:
     def test_ranking_and_summary(self, tmp_path):
         report = analyze(_seed(tmp_path))
-        assert [h.host for h in report.hosts][0] == "admin.example.com"  # redis -> Critical, ranked first
+        assert [h.host for h in report.hosts][
+            0
+        ] == "admin.example.com"  # redis -> Critical, ranked first
         assert report.hosts[0].priority is Priority.CRITICAL
         # summary is fully populated, highest first
         assert list(report.summary.keys()) == ["Critical", "High", "Medium", "Low"]
@@ -263,11 +271,18 @@ class TestAnalyze:
     def test_scan_findings_fold_into_scoring(self, tmp_path):
         ws = _seed(tmp_path)
         # www only had ssh (INFO) -> Low; a critical scan finding must lift it
-        ws.path("scans", "findings.json").write_text(json.dumps({
-            "tools": {"nuclei": [
-                "[cve-2024-9999] [http] [critical] https://www.example.com/rce",
-            ]},
-        }), encoding="utf-8")
+        ws.path("scans", "findings.json").write_text(
+            json.dumps(
+                {
+                    "tools": {
+                        "nuclei": [
+                            "[cve-2024-9999] [http] [critical] https://www.example.com/rce",
+                        ]
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
         report = analyze(ws)
         www = next(h for h in report.hosts if h.host == "www.example.com")
         assert www.priority is Priority.CRITICAL

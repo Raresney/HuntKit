@@ -87,7 +87,9 @@ def test_scan_runs_over_targets_and_writes_files(tmp_path):
     ws = _ws(tmp_path, live=["https://api.example.com", "https://www.example.com"])
     cfg = Config()
     summary = run_scan(
-        ws, cfg, runner=CommandRunner(cfg),
+        ws,
+        cfg,
+        runner=CommandRunner(cfg),
         registry=_registry(StubNuclei(), StubDalfox()),
     )
     assert summary.targets == 2
@@ -133,7 +135,9 @@ def test_scan_tool_selection(tmp_path):
     ws = _ws(tmp_path, live=["https://api.example.com"])
     cfg = Config()
     summary = run_scan(
-        ws, cfg, runner=CommandRunner(cfg),
+        ws,
+        cfg,
+        runner=CommandRunner(cfg),
         registry=_registry(StubNuclei(), StubDalfox()),
         tools=["dalfox"],
     )
@@ -154,7 +158,9 @@ def test_scan_crashing_scanner_is_isolated(tmp_path):
     ws = _ws(tmp_path, live=["https://api.example.com"])
     cfg = Config()
     summary = run_scan(
-        ws, cfg, runner=CommandRunner(cfg),
+        ws,
+        cfg,
+        runner=CommandRunner(cfg),
         registry=_registry(CrashingScanner()),
     )
     # the crash is captured as a skip, not raised

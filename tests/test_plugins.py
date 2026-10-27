@@ -18,11 +18,24 @@ from huntkit.plugins.nmap import Nmap
 from huntkit.utils.process import ProcResult
 
 EXPECTED = {
-    "subfinder", "assetfinder", "amass", "findomain", "chaos",  # discovery
-    "httpx", "whatweb", "dnsx",                                  # resolve
-    "naabu", "nmap",                                             # ports
-    "gau", "waybackurls", "katana", "hakrawler",                # urls
-    "nuclei", "ffuf", "arjun", "dalfox",                        # scan
+    "subfinder",
+    "assetfinder",
+    "amass",
+    "findomain",
+    "chaos",  # discovery
+    "httpx",
+    "whatweb",
+    "dnsx",  # resolve
+    "naabu",
+    "nmap",  # ports
+    "gau",
+    "waybackurls",
+    "katana",
+    "hakrawler",  # urls
+    "nuclei",
+    "ffuf",
+    "arjun",
+    "dalfox",  # scan
 }
 
 
@@ -58,7 +71,10 @@ class TestDiscovery:
         assert reg.get("nope") is None
         assert "nuclei" in reg
         assert {p.name for p in reg.by_category(Category.SCAN)} == {
-            "nuclei", "ffuf", "arjun", "dalfox"
+            "nuclei",
+            "ffuf",
+            "arjun",
+            "dalfox",
         }
         assert "httpx" in {p.name for p in reg.producing(Capability.URL)}
         assert "nuclei" in {p.name for p in reg.consuming(Capability.URL)}
@@ -73,21 +89,17 @@ class TestDiscovery:
     def test_capability_chain_is_wired(self):
         """subdomains -> live urls -> scanned: each stage feeds the next."""
         reg = discover()
-        assert reg.producing(Capability.SUBDOMAIN)          # discovery exists
-        assert reg.consuming(Capability.SUBDOMAIN)          # httpx takes them
-        assert reg.producing(Capability.URL)                # urls produced
-        assert reg.consuming(Capability.URL)                # scanners take them
+        assert reg.producing(Capability.SUBDOMAIN)  # discovery exists
+        assert reg.consuming(Capability.SUBDOMAIN)  # httpx takes them
+        assert reg.producing(Capability.URL)  # urls produced
+        assert reg.consuming(Capability.URL)  # scanners take them
 
 
 class TestBuildArgs:
     def test_target_mode_places_seed(self):
         reg = discover()
-        assert reg.get("subfinder").build_args(_ctx(target="x.com")) == [
-            "-silent", "-d", "x.com"
-        ]
-        assert reg.get("assetfinder").build_args(_ctx(target="x.com")) == [
-            "--subs-only", "x.com"
-        ]
+        assert reg.get("subfinder").build_args(_ctx(target="x.com")) == ["-silent", "-d", "x.com"]
+        assert reg.get("assetfinder").build_args(_ctx(target="x.com")) == ["--subs-only", "x.com"]
 
     def test_stdin_mode_flags_only(self):
         # input goes via stdin, so args carry no hosts
@@ -127,8 +139,8 @@ class TestParse:
         assert out == ["api.x.com", "www.x.com"]
 
     def test_default_parse_is_lines(self):
-        out = discover().get("subfinder").parse(
-            ProcResult(0, "a.x.com\n\nb.x.com\n", "", []), _ctx()
+        out = (
+            discover().get("subfinder").parse(ProcResult(0, "a.x.com\n\nb.x.com\n", "", []), _ctx())
         )
         assert out == ["a.x.com", "b.x.com"]
 

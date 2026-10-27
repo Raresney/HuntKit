@@ -78,11 +78,11 @@ EventFn = Callable[[dict], None]
 @dataclass
 class StageOutcome:
     stage: str
-    new: int = 0                       # newly discovered items
-    total: int = 0                     # total in the file afterwards
+    new: int = 0  # newly discovered items
+    total: int = 0  # total in the file afterwards
     ran: list[str] = field(default_factory=list)
     skipped: list[tuple[str, str]] = field(default_factory=list)  # (plugin, reason)
-    resumed: bool = False              # skipped because already done
+    resumed: bool = False  # skipped because already done
 
 
 @dataclass
@@ -151,9 +151,13 @@ class Pipeline:
         for stage in wave:
             if resume and self.ws.state.is_done(stage):
                 self._emit({"event": "stage_resumed", "stage": stage})
-                summary.stages.append(StageOutcome(
-                    stage=stage, total=self.ws.count(STAGE_FILES[stage]), resumed=True,
-                ))
+                summary.stages.append(
+                    StageOutcome(
+                        stage=stage,
+                        total=self.ws.count(STAGE_FILES[stage]),
+                        resumed=True,
+                    )
+                )
                 continue
             to_run.append(stage)
             self._emit({"event": "stage_start", "stage": stage})
@@ -172,24 +176,35 @@ class Pipeline:
             try:
                 result = fut.result()
             except Exception as exc:  # a crashing tool must not sink the run
-                result = PluginResult(name, Capability.SUBDOMAIN, skipped=True,
-                                      reason=f"error: {exc}")
+                result = PluginResult(
+                    name, Capability.SUBDOMAIN, skipped=True, reason=f"error: {exc}"
+                )
             results[stage].append((name, result))
             if result.skipped:
-                self._emit({"event": "plugin_skip", "stage": stage,
-                            "plugin": name, "reason": result.reason})
+                self._emit(
+                    {
+                        "event": "plugin_skip",
+                        "stage": stage,
+                        "plugin": name,
+                        "reason": result.reason,
+                    }
+                )
             else:
-                self._emit({"event": "plugin_done", "stage": stage,
-                            "plugin": name, "found": len(result.items)})
+                self._emit(
+                    {
+                        "event": "plugin_done",
+                        "stage": stage,
+                        "plugin": name,
+                        "found": len(result.items),
+                    }
+                )
 
         # merge + record each stage on the main thread (no write races)
         for stage in to_run:
             summary.stages.append(self._finalize_stage(stage, results.get(stage, [])))
 
     # ---- merge one stage's results --------------------------------------
-    def _finalize_stage(
-        self, stage: str, results: list[tuple[str, PluginResult]]
-    ) -> StageOutcome:
+    def _finalize_stage(self, stage: str, results: list[tuple[str, PluginResult]]) -> StageOutcome:
         outcome = StageOutcome(stage=stage)
         merged: list[str] = []
         for name, result in results:
@@ -205,8 +220,7 @@ class Pipeline:
         # the raw subdomains so live/ports still have something to work on
         fallback = False
         if stage == "resolve" and self.ws.count(STAGE_FILES["resolve"]) == 0:
-            self.ws.append_unique(STAGE_FILES["resolve"],
-                                  self.ws.read_lines(STAGE_FILES["subs"]))
+            self.ws.append_unique(STAGE_FILES["resolve"], self.ws.read_lines(STAGE_FILES["subs"]))
             fallback = True
 
         outcome.total = self.ws.count(STAGE_FILES[stage])
@@ -215,9 +229,16 @@ class Pipeline:
             self.ws.state.done(stage, new=outcome.new, total=outcome.total, fallback=fallback)
         else:
             self.ws.state.skip(stage)
-        self._emit({"event": "stage_done", "stage": stage,
-                    "new": outcome.new, "total": outcome.total,
-                    "ran": outcome.ran, "skipped": outcome.skipped})
+        self._emit(
+            {
+                "event": "stage_done",
+                "stage": stage,
+                "new": outcome.new,
+                "total": outcome.total,
+                "ran": outcome.ran,
+                "skipped": outcome.skipped,
+            }
+        )
         return outcome
 
     # ---- wiring inputs per stage ----------------------------------------
@@ -237,8 +258,11 @@ class Pipeline:
             else:  # crawlers walk the live hosts
                 inputs = self.ws.read_lines(STAGE_FILES["live"])
         return PluginContext(
-            config=self.config, runner=self.runner,
-            target=target, inputs=inputs, extra={"use_cache": self.use_cache},
+            config=self.config,
+            runner=self.runner,
+            target=target,
+            inputs=inputs,
+            extra={"use_cache": self.use_cache},
         )
 
     def _scope_filter(self, stage: str, items: list[str]) -> list[str]:
@@ -268,6 +292,11 @@ def run_recon(
 ) -> ReconSummary:
     """Convenience wrapper: build a :class:`Pipeline` and run it once."""
     return Pipeline(
-        ws, config, runner=runner, registry=registry, on_event=on_event,
-        threads=threads, use_cache=use_cache,
+        ws,
+        config,
+        runner=runner,
+        registry=registry,
+        on_event=on_event,
+        threads=threads,
+        use_cache=use_cache,
     ).run(domain, stages, resume=resume)

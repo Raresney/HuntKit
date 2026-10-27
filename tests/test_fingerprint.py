@@ -47,7 +47,7 @@ class TestRules:
         for r in FINGERPRINT_RULES:
             assert r.kind in KINDS
             assert isinstance(r.severity, Severity)
-            assert r.headers                                   # at least one signal
+            assert r.headers  # at least one signal
 
     def test_waf_flagged_others_info(self):
         for r in FINGERPRINT_RULES:

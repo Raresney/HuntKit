@@ -42,8 +42,10 @@ class StubHttpx(ToolPlugin):
     def execute(self, ctx: PluginContext) -> PluginResult:
         # echo each input host back as a live https url
         return PluginResult(
-            self.name, self.produces,
-            items=[f"https://{h}" for h in ctx.inputs], ok=True,
+            self.name,
+            self.produces,
+            items=[f"https://{h}" for h in ctx.inputs],
+            ok=True,
         )
 
 
@@ -96,8 +98,11 @@ def test_full_chain_scope_and_dedupe(tmp_path):
     ws = _ws(tmp_path)
     cfg = Config()
     run_recon(
-        ws, cfg, "example.com",
-        runner=CommandRunner(cfg), registry=_registry(),
+        ws,
+        cfg,
+        "example.com",
+        runner=CommandRunner(cfg),
+        registry=_registry(),
     )
     subs = ws.read_lines("recon/subdomains.txt")
     # seed + two in-scope subs; the out-of-scope host is filtered out
@@ -126,8 +131,9 @@ def test_counts_and_state_recorded(tmp_path):
 def test_stage_selection_runs_only_requested(tmp_path):
     ws = _ws(tmp_path)
     cfg = Config()
-    run_recon(ws, cfg, "example.com", stages=["subs"],
-              runner=CommandRunner(cfg), registry=_registry())
+    run_recon(
+        ws, cfg, "example.com", stages=["subs"], runner=CommandRunner(cfg), registry=_registry()
+    )
     assert ws.state.is_done("subs")
     # live not attempted
     assert ws.state.status("live").value == "pending"
@@ -139,7 +145,10 @@ def test_events_emitted(tmp_path):
     cfg = Config()
     events = []
     Pipeline(
-        ws, cfg, runner=CommandRunner(cfg), registry=_registry(),
+        ws,
+        cfg,
+        runner=CommandRunner(cfg),
+        registry=_registry(),
         on_event=events.append,
     ).run("example.com", stages=["subs"])
     kinds = [e["event"] for e in events]
@@ -152,8 +161,9 @@ def test_missing_tools_skip_gracefully(tmp_path):
     """An empty registry writes only the seed and marks stages skipped."""
     ws = _ws(tmp_path)
     cfg = Config()
-    summary = run_recon(ws, cfg, "example.com",
-                        runner=CommandRunner(cfg), registry=PluginRegistry())
+    summary = run_recon(
+        ws, cfg, "example.com", runner=CommandRunner(cfg), registry=PluginRegistry()
+    )
     assert ws.read_lines("recon/subdomains.txt") == ["example.com"]  # seed only
     assert all(s.ran == [] for s in summary.stages)
 
@@ -168,7 +178,7 @@ def test_dnsx_resolve_narrows_live_set(tmp_path):
     cfg = Config()
     run_recon(ws, cfg, "example.com", runner=CommandRunner(cfg), registry=reg)
     resolved = ws.read_lines("recon/resolved.txt")
-    assert "www.example.com" not in resolved   # dropped by dnsx
+    assert "www.example.com" not in resolved  # dropped by dnsx
     assert "api.example.com" in resolved
     live = ws.read_lines("recon/live.txt")
     assert "https://www.example.com" not in live
@@ -180,12 +190,12 @@ def test_resume_skips_completed_stage(tmp_path):
     reg.register(CountingSub())
     ws = _ws(tmp_path)
     cfg = Config()
-    run_recon(ws, cfg, "example.com", stages=["subs"],
-              runner=CommandRunner(cfg), registry=reg)
+    run_recon(ws, cfg, "example.com", stages=["subs"], runner=CommandRunner(cfg), registry=reg)
     assert CountingSub.calls == 1
     # a second run resumes: the done stage is not executed again
-    summary = run_recon(ws, cfg, "example.com", stages=["subs"],
-                        runner=CommandRunner(cfg), registry=reg)
+    summary = run_recon(
+        ws, cfg, "example.com", stages=["subs"], runner=CommandRunner(cfg), registry=reg
+    )
     assert CountingSub.calls == 1
     assert summary.stages[0].resumed is True
 
@@ -196,16 +206,21 @@ def test_fresh_reruns_completed_stage(tmp_path):
     reg.register(CountingSub())
     ws = _ws(tmp_path)
     cfg = Config()
-    run_recon(ws, cfg, "example.com", stages=["subs"],
-              runner=CommandRunner(cfg), registry=reg)
-    run_recon(ws, cfg, "example.com", stages=["subs"], resume=False,
-              runner=CommandRunner(cfg), registry=reg)
+    run_recon(ws, cfg, "example.com", stages=["subs"], runner=CommandRunner(cfg), registry=reg)
+    run_recon(
+        ws,
+        cfg,
+        "example.com",
+        stages=["subs"],
+        resume=False,
+        runner=CommandRunner(cfg),
+        registry=reg,
+    )
     assert CountingSub.calls == 2
 
 
 def test_threads_option_runs(tmp_path):
     ws = _ws(tmp_path)
     cfg = Config()
-    run_recon(ws, cfg, "example.com", threads=4,
-              runner=CommandRunner(cfg), registry=_registry())
+    run_recon(ws, cfg, "example.com", threads=4, runner=CommandRunner(cfg), registry=_registry())
     assert ws.count("recon/subdomains.txt") == 3

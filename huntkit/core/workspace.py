@@ -142,7 +142,4 @@ def list_workspaces(base: Path | None = None, config: Config | None = None) -> l
     base = base or default_base(config)
     if not base.exists():
         return []
-    return sorted(
-        p.name for p in base.iterdir()
-        if p.is_dir() and (p / "state.json").exists()
-    )
+    return sorted(p.name for p in base.iterdir() if p.is_dir() and (p / "state.json").exists())

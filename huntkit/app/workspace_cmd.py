@@ -51,8 +51,9 @@ def workspace_show(
         term.bullet(f"{entry}  (excluded)", style="warn")
 
     if ws.state.counts:
-        term.print_table("Assets", ["metric", "count"],
-                         [(k, str(v)) for k, v in ws.state.counts.items()])
+        term.print_table(
+            "Assets", ["metric", "count"], [(k, str(v)) for k, v in ws.state.counts.items()]
+        )
     if ws.state.stages:
         rows = []
         for name, rec in ws.state.stages.items():

@@ -60,9 +60,7 @@ class CommandRunner:
         """
         binary = self.resolve(tool)
         if binary is None:
-            raise ToolNotFound(
-                f"'{tool}' not found on PATH — install it or set tools.{tool}.path"
-            )
+            raise ToolNotFound(f"'{tool}' not found on PATH — install it or set tools.{tool}.path")
 
         tool_cfg = self.config.tool(tool)
         argv = [binary, *[str(a) for a in args], *tool_cfg.extra_args]
@@ -94,8 +92,9 @@ class CommandRunner:
         for attempt in range(retry + 1):
             log.debug("exec (try %d/%d): %s", attempt + 1, retry + 1, " ".join(argv))
             result = process.execute(argv, timeout=timeout, stdin_data=stdin_data, env=env)
-            log.debug("→ code=%s dur=%.1fs lines=%d", result.code, result.duration,
-                      len(result.lines))
+            log.debug(
+                "→ code=%s dur=%.1fs lines=%d", result.code, result.duration, len(result.lines)
+            )
             # retry only transient failures (timeout), not clean non-zero exits
             if result.ok or not result.timed_out or attempt == retry:
                 return result

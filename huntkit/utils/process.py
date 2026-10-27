@@ -74,14 +74,24 @@ def execute(
             cwd=cwd,
         )
     except FileNotFoundError:
-        return ProcResult(NOT_FOUND, "", f"binary not found: {argv[0]}", argv,
-                          duration=time.monotonic() - started)
+        return ProcResult(
+            NOT_FOUND, "", f"binary not found: {argv[0]}", argv, duration=time.monotonic() - started
+        )
     except subprocess.TimeoutExpired as exc:
         partial = _decode(exc.stdout)
-        return ProcResult(TIMEOUT, partial, f"timeout after {timeout}s", argv,
-                          duration=time.monotonic() - started, timed_out=True)
+        return ProcResult(
+            TIMEOUT,
+            partial,
+            f"timeout after {timeout}s",
+            argv,
+            duration=time.monotonic() - started,
+            timed_out=True,
+        )
     return ProcResult(
-        proc.returncode, proc.stdout, proc.stderr, argv,
+        proc.returncode,
+        proc.stdout,
+        proc.stderr,
+        argv,
         duration=time.monotonic() - started,
     )
 

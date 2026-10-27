@@ -118,7 +118,7 @@ class AttackPath:
 
     playbook: str
     name: str
-    severity: Severity          # worst contributing signal
+    severity: Severity  # worst contributing signal
     hosts: list[str]
     signals: list[Signal]
 

@@ -42,8 +42,7 @@ def to_json(report: Report) -> str:
 # Markdown
 # ---------------------------------------------------------------------------
 def _md_table(headers: list[str], rows: Sequence[tuple[str, ...]]) -> list[str]:
-    out = ["| " + " | ".join(headers) + " |",
-           "| " + " | ".join("---" for _ in headers) + " |"]
+    out = ["| " + " | ".join(headers) + " |", "| " + " | ".join("---" for _ in headers) + " |"]
     out += ["| " + " | ".join(row) + " |" for row in rows]
     out.append("")
     return out
@@ -51,8 +50,12 @@ def _md_table(headers: list[str], rows: Sequence[tuple[str, ...]]) -> list[str]:
 
 def to_markdown(report: Report) -> str:
     intel = report.intel
-    out: list[str] = [f"# HuntKit Report — {report.program}", "",
-                      f"_Generated {_ts(report.generated)}_", ""]
+    out: list[str] = [
+        f"# HuntKit Report — {report.program}",
+        "",
+        f"_Generated {_ts(report.generated)}_",
+        "",
+    ]
     if report.scope_in:
         out.append(f"**In scope:** {', '.join(report.scope_in)}")
     if report.scope_out:
@@ -60,16 +63,23 @@ def to_markdown(report: Report) -> str:
     out.append("")
 
     out += ["## Summary", ""]
-    out += _md_table(["Priority", "Hosts"],
-                     [(label, str(n)) for label, n in intel.summary.items()])
+    out += _md_table(["Priority", "Hosts"], [(label, str(n)) for label, n in intel.summary.items()])
     out += [f"{len(intel.signals)} signals across {len(intel.hosts)} hosts.", ""]
 
     if intel.hosts:
         out += ["## Prioritised hosts", ""]
         out += _md_table(
             ["Host", "Priority", "Score", "Signals", "Playbooks"],
-            [(h.host, h.priority.label, str(h.score), str(len(h.signals)),
-              ", ".join(h.playbooks[:4]) or "—") for h in intel.hosts],
+            [
+                (
+                    h.host,
+                    h.priority.label,
+                    str(h.score),
+                    str(len(h.signals)),
+                    ", ".join(h.playbooks[:4]) or "—",
+                )
+                for h in intel.hosts
+            ],
         )
 
     paths = intel.attack_paths()
@@ -90,12 +100,15 @@ def to_markdown(report: Report) -> str:
         )
 
     out += ["## Recon surface", ""]
-    out += _md_table(["Stage", "Count"],
-                     [(label, str(n)) for label, n in report.recon.items()])
+    out += _md_table(["Stage", "Count"], [(label, str(n)) for label, n in report.recon.items()])
 
     if report.playbooks:
-        out += ["## Playbooks", "",
-                "The bug classes this surface points at, in priority order.", ""]
+        out += [
+            "## Playbooks",
+            "",
+            "The bug classes this surface points at, in priority order.",
+            "",
+        ]
         for pb in report.playbooks:
             out.append(pb.to_markdown(level=3))
             out.append("")
@@ -163,18 +176,18 @@ def _chip(sev) -> str:
 
 def _html_table(headers: list[str], rows: Sequence[tuple[str, ...]]) -> str:
     head = "".join(f"<th>{_html.escape(h)}</th>" for h in headers)
-    body = "".join(
-        "<tr>" + "".join(f"<td>{c}</td>" for c in row) + "</tr>" for row in rows
-    )
+    body = "".join("<tr>" + "".join(f"<td>{c}</td>" for c in row) + "</tr>" for row in rows)
     return f"<table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>"
 
 
 def _playbook_html(pb: Playbook) -> str:
-    p: list[str] = ["<section class='pb'>",
-                    f"<h3>{_html.escape(pb.title)} {_chip(pb.severity)} "
-                    f"<code>{_html.escape(pb.id)}</code></h3>",
-                    f"<p>{_html.escape(pb.summary)}</p>",
-                    f"<p class='muted'><strong>When:</strong> {_html.escape(pb.when)}</p>"]
+    p: list[str] = [
+        "<section class='pb'>",
+        f"<h3>{_html.escape(pb.title)} {_chip(pb.severity)} "
+        f"<code>{_html.escape(pb.id)}</code></h3>",
+        f"<p>{_html.escape(pb.summary)}</p>",
+        f"<p class='muted'><strong>When:</strong> {_html.escape(pb.when)}</p>",
+    ]
 
     def block(head: str, items: tuple[str, ...]) -> None:
         if not items:
@@ -191,8 +204,10 @@ def _playbook_html(pb: Playbook) -> str:
         p.append("<h4>Go-to tools</h4><p>" + _html.escape(", ".join(pb.tools)) + "</p>")
     if pb.references:
         p.append("<h4>References</h4><ul>")
-        p += [f"<li><a href='{_html.escape(r.url)}'>{_html.escape(r.name)}</a></li>"
-              for r in pb.references]
+        p += [
+            f"<li><a href='{_html.escape(r.url)}'>{_html.escape(r.name)}</a></li>"
+            for r in pb.references
+        ]
         p.append("</ul>")
     p.append("</section>")
     return "".join(p)
@@ -212,24 +227,40 @@ def to_html(report: Report) -> str:
         f"<p class='meta'>Generated {_ts(report.generated)}</p>",
     ]
     if report.scope_in:
-        h.append(f"<p class='meta'><strong>In scope:</strong> {esc(', '.join(report.scope_in))}</p>")
+        h.append(
+            f"<p class='meta'><strong>In scope:</strong> {esc(', '.join(report.scope_in))}</p>"
+        )
     if report.scope_out:
-        h.append(f"<p class='meta'><strong>Out of scope:</strong> {esc(', '.join(report.scope_out))}</p>")
+        h.append(
+            f"<p class='meta'><strong>Out of scope:</strong> {esc(', '.join(report.scope_out))}</p>"
+        )
 
     h.append("<h2>Summary</h2><div class='cards'>")
     for label, n in intel.summary.items():
-        h.append(f"<div class='card card-{label.lower()}'>"
-                 f"<div class='card-n'>{n}</div><div class='card-l'>{label}</div></div>")
+        h.append(
+            f"<div class='card card-{label.lower()}'>"
+            f"<div class='card-n'>{n}</div><div class='card-l'>{label}</div></div>"
+        )
     h.append("</div>")
     h.append(f"<p>{len(intel.signals)} signals across {len(intel.hosts)} hosts.</p>")
 
     if intel.hosts:
         h.append("<h2>Prioritised hosts</h2>")
-        h.append(_html_table(
-            ["Host", "Priority", "Score", "Signals", "Playbooks"],
-            [(esc(x.host), _chip(x.priority), str(x.score), str(len(x.signals)),
-              esc(", ".join(x.playbooks[:4]) or "—")) for x in intel.hosts],
-        ))
+        h.append(
+            _html_table(
+                ["Host", "Priority", "Score", "Signals", "Playbooks"],
+                [
+                    (
+                        esc(x.host),
+                        _chip(x.priority),
+                        str(x.score),
+                        str(len(x.signals)),
+                        esc(", ".join(x.playbooks[:4]) or "—"),
+                    )
+                    for x in intel.hosts
+                ],
+            )
+        )
 
     paths = intel.attack_paths()
     if paths:
@@ -237,21 +268,31 @@ def to_html(report: Report) -> str:
         rows = []
         for p in paths:
             where = esc(", ".join(p.hosts[:4])) + (" …" if len(p.hosts) > 4 else "")
-            rows.append((esc(p.name), f"<code>{esc(p.playbook)}</code>",
-                         _chip(p.severity), str(len(p.hosts)), where))
+            rows.append(
+                (
+                    esc(p.name),
+                    f"<code>{esc(p.playbook)}</code>",
+                    _chip(p.severity),
+                    str(len(p.hosts)),
+                    where,
+                )
+            )
         h.append(_html_table(["Playbook", "id", "Severity", "Hosts", "Where"], rows))
 
     hot = _notable(report)
     if hot:
         h.append("<h2>Notable exposures</h2>")
-        h.append(_html_table(
-            ["Severity", "Host", "Finding", "Evidence"],
-            [(_chip(s.severity), esc(s.host), esc(s.title), esc(s.evidence)) for s in hot],
-        ))
+        h.append(
+            _html_table(
+                ["Severity", "Host", "Finding", "Evidence"],
+                [(_chip(s.severity), esc(s.host), esc(s.title), esc(s.evidence)) for s in hot],
+            )
+        )
 
     h.append("<h2>Recon surface</h2>")
-    h.append(_html_table(["Stage", "Count"],
-                         [(esc(label), str(n)) for label, n in report.recon.items()]))
+    h.append(
+        _html_table(["Stage", "Count"], [(esc(label), str(n)) for label, n in report.recon.items()])
+    )
 
     if report.playbooks:
         h.append("<h2>Playbooks</h2>")

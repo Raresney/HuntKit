@@ -17,16 +17,19 @@ _PLAYBOOK_IDS = {"idor", "bac", "xss", "ssrf", "sqli", "ssti", "subtakeover", "a
 
 def _seed(tmp_path) -> Workspace:
     ws = Workspace.open("acme", base=tmp_path)
-    ws.append_unique("recon/subdomains.txt",
-                     ["api.dev.example.com", "admin.example.com", "www.example.com"])
+    ws.append_unique(
+        "recon/subdomains.txt", ["api.dev.example.com", "admin.example.com", "www.example.com"]
+    )
     ws.append_unique("recon/resolved.txt", ["api.dev.example.com", "admin.example.com"])
-    ws.append_unique("recon/live.txt",
-                     ["https://api.dev.example.com", "https://admin.example.com"])
+    ws.append_unique("recon/live.txt", ["https://api.dev.example.com", "https://admin.example.com"])
     ws.append_unique("recon/ports.txt", ["admin.example.com:6379", "www.example.com:22"])
-    ws.append_unique("urls/urls.txt", [
-        "https://api.dev.example.com/admin?id=5&redirect=http://x",
-        "https://api.dev.example.com/.git/config",
-    ])
+    ws.append_unique(
+        "urls/urls.txt",
+        [
+            "https://api.dev.example.com/admin?id=5&redirect=http://x",
+            "https://api.dev.example.com/.git/config",
+        ],
+    )
     ws.set_scope(["*.example.com"], [])
     return ws
 
@@ -56,7 +59,7 @@ class TestBuild:
         assert rep.has_findings and rep.has_data
         ids = [p.id for p in rep.playbooks]
         assert ids and set(ids) <= _PLAYBOOK_IDS
-        assert len(ids) == len(set(ids))                 # de-duped
+        assert len(ids) == len(set(ids))  # de-duped
 
     def test_empty_workspace_has_no_data(self, tmp_path):
         rep = build(Workspace.open("empty", base=tmp_path))
@@ -70,11 +73,17 @@ class TestMarkdown:
     def test_sections_and_nested_playbooks(self, tmp_path):
         md = render.to_markdown(build(_seed(tmp_path)))
         assert md.startswith("# HuntKit Report — acme")
-        for head in ["## Summary", "## Prioritised hosts", "## Attack paths",
-                     "## Notable exposures", "## Recon surface", "## Playbooks"]:
+        for head in [
+            "## Summary",
+            "## Prioritised hosts",
+            "## Attack paths",
+            "## Notable exposures",
+            "## Recon surface",
+            "## Playbooks",
+        ]:
             assert head in md, head
         assert "*.example.com" in md
-        assert "### " in md                              # playbook nested at h3
+        assert "### " in md  # playbook nested at h3
         assert md.endswith("\n")
 
     def test_notable_surfaces_redis(self, tmp_path):
@@ -89,7 +98,7 @@ class TestHtml:
     def test_selfcontained_and_styled(self, tmp_path):
         htm = render.to_html(build(_seed(tmp_path)))
         assert htm.startswith("<!doctype html>")
-        assert "<style>" in htm                          # css inlined
+        assert "<style>" in htm  # css inlined
         assert "<link" not in htm.lower() and "src=" not in htm  # no external assets
         assert "sev-critical" in htm and "<table" in htm and "<pre>" in htm
 
