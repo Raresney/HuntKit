@@ -21,6 +21,7 @@ from ..ai import Advisor, ApprovalDenied, ProviderError, get_provider, provider_
 from ..core.workspace import Workspace, list_workspaces
 from ..enrich import EnrichReport, run_enrich
 from ..fingerprint import fingerprint_headers, has_waf
+from ..history import DiffReport, capture, current_vs, find, latest, list_snapshots, save
 from ..intel import IntelReport, Priority, save_report
 from ..intel import analyze as run_analyze
 from ..knowledge import Playbook, all_playbooks, get_playbook
@@ -880,6 +881,96 @@ def _print_shots_summary(summary: ShotSummary, ws: Workspace) -> None:
         raise typer.Exit(0)
     term.ok(f"{summary.captured}/{summary.targets} captured under {ws.path('reports', 'shots')}.")
     term.info(f"embed them in a gallery:  huntkit report -p {summary.program} -f html")
+
+
+# --------------------------------------------------------------------------
+# diff (snapshots over time)
+# --------------------------------------------------------------------------
+@app.command()
+def diff(
+    ctx: typer.Context,
+    program: Optional[str] = typer.Option(
+        None, "--program", "-p", help="Workspace to diff (default: the only one)."
+    ),
+    save_baseline: bool = typer.Option(
+        False, "--save", help="After diffing, save the current state as a new baseline."
+    ),
+    against: Optional[str] = typer.Option(
+        None, "--against", help="Baseline snapshot id (default: the most recent)."
+    ),
+    show_list: bool = typer.Option(False, "--list", help="List saved snapshots and exit."),
+    top: int = typer.Option(25, "--top", "-n", help="Max items to list per category."),
+) -> None:
+    """Show what changed since a saved snapshot — new subdomains, URLs, findings."""
+    app_ctx = ctx.obj
+    program = program or _pick_program(app_ctx, default="")
+    if not program:
+        term.error("which workspace? pass -p <program> (none, or several, found).")
+        raise typer.Exit(2)
+    ws = Workspace.open(program, config=app_ctx.config, base=app_ctx.base)
+
+    if show_list:
+        _print_snapshots(ws, program)
+        raise typer.Exit(0)
+
+    baseline = find(ws, against) if against else latest(ws)
+    if against and baseline is None:
+        term.error(f"no snapshot '{against}' — see them with:  huntkit diff -p {program} --list")
+        raise typer.Exit(2)
+
+    term.banner(f"diff — {program}")
+    if baseline is None:
+        if save_baseline:
+            snap = save(ws, capture(ws))
+            term.ok(f"no baseline yet — saved the current state as '{snap.stem}'.")
+        else:
+            term.warn("no baseline snapshot yet.")
+            term.info(f"set one:  huntkit diff -p {program} --save")
+        raise typer.Exit(0)
+
+    report, now = current_vs(ws, baseline)
+    _print_diff(report, top)
+    if save_baseline:
+        save(ws, now)
+        term.ok(f"baseline updated → '{now.id}'.")
+
+
+def _print_snapshots(ws: Workspace, program: str) -> None:
+    snaps = list_snapshots(ws)
+    term.banner(f"snapshots — {program}")
+    if not snaps:
+        term.warn("no snapshots saved yet.")
+        term.info(f"save one:  huntkit diff -p {program} --save")
+        return
+    rows = [
+        (s.id, s.generated, str(s.counts["live"]), str(s.counts["urls"]), str(s.counts["findings"]))
+        for s in snaps
+    ]
+    term.print_table("Saved snapshots", ["id", "generated", "live", "urls", "findings"], rows)
+
+
+def _print_diff(report: DiffReport, top: int) -> None:
+    term.info(f"baseline '{report.base_id}' → now:  +{report.total_added}  -{report.total_removed}")
+    if not report.has_changes:
+        term.ok(f"no changes since '{report.base_id}'.")
+        return
+
+    rows = [(c.name, f"+{len(c.added)}", f"-{len(c.removed)}") for c in report.changed]
+    term.print_table("Changed", ["category", "added", "removed"], rows)
+
+    if report.new_findings:
+        term.step(f"NEW findings ({len(report.new_findings)})")
+        for item in report.new_findings[:top]:
+            term.bullet(escape(item), "ok")
+
+    for c in report.changed:
+        if c.name == "findings" or not (c.added or c.removed):
+            continue
+        term.step(c.name)
+        for item in c.added[:top]:
+            term.bullet(f"+ {escape(item)}", "ok")
+        for item in c.removed[:top]:
+            term.bullet(f"- {escape(item)}", "muted")
 
 
 # --------------------------------------------------------------------------
