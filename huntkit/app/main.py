@@ -318,6 +318,8 @@ def _print_scan_summary(summary: ScanSummary, ws: Workspace) -> None:
     term.print_table("Scan summary", ["scanner", "result"], rows)
     term.ok(f"{summary.total_findings} finding(s) across {summary.targets} target(s). "
             f"Details under {ws.path('scans')}")
+    if summary.total_findings:
+        term.info(f"fold findings into host scoring:  huntkit analyze -p {summary.program}")
 
 
 # --------------------------------------------------------------------------

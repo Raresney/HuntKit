@@ -12,6 +12,7 @@ already gathered and never touches the target.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from urllib.parse import parse_qsl, urlsplit
 
@@ -27,6 +28,7 @@ __all__ = [
     "signals_from_paths",
     "signals_from_params",
     "signals_from_labels",
+    "signals_from_findings",
 ]
 
 
@@ -368,11 +370,80 @@ def signals_from_labels(hosts: list[str]) -> list[Signal]:
     return acc.signals()
 
 
-def scan_signals(*, ports: list[str], urls: list[str], hosts: list[str]) -> list[Signal]:
+# --------------------------------------------------------------------------
+# Scanner findings — the output of the active `scan` phase (nuclei/dalfox).
+# Unlike the recon matchers above (which score *potential* from the shape of
+# the surface), these are *confirmed* hits from a scanner, so they are the
+# strongest signal: a nuclei finding carries its own severity, a dalfox hit is
+# a reflected/stored XSS. They flow into host scoring and attack paths like
+# any other signal, with category "finding".
+# --------------------------------------------------------------------------
+_NUCLEI_SEVERITIES = {"info", "informational", "low", "medium", "high", "critical"}
+
+# dalfox reports XSS; it has no severity column, so we fix it at High + xss.
+_DALFOX_RULE = Rule("dalfox-xss", "dalfox — reflected/stored XSS", Severity.HIGH, ("xss",))
+
+
+def _bracket_tokens(line: str) -> list[str]:
+    """The ``[...]`` tokens nuclei prefixes each finding with."""
+    return re.findall(r"\[([^\]]+)\]", line)
+
+
+def _first_url(line: str) -> str:
+    """First http(s) URL in a line (how scanners cite the affected target)."""
+    for tok in line.split():
+        if tok.startswith(("http://", "https://")):
+            return tok
+    return ""
+
+
+def _slug(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:48] or "finding"
+
+
+def _nuclei_signal_rule(line: str) -> Rule:
+    """Build a Rule from a nuclei output line (``[tid] [proto] [sev] url``)."""
+    tokens = _bracket_tokens(line)
+    severity = Severity.MEDIUM
+    for tok in tokens:
+        if tok.lower() in _NUCLEI_SEVERITIES:
+            severity = Severity.from_name(tok)
+            break
+    template = tokens[0] if tokens else "finding"
+    return Rule(f"nuclei-{_slug(template)}", f"nuclei: {template}", severity)
+
+
+def signals_from_findings(findings_by_tool: dict[str, list[str]]) -> list[Signal]:
+    """Scanner output (``{tool: [lines]}``) -> confirmed-finding signals."""
+    acc = _Acc()
+    for tool, lines in findings_by_tool.items():
+        for raw in lines:
+            line = raw.strip()
+            if not line:
+                continue
+            host = url_host(_first_url(line))
+            if not host:
+                continue
+            if tool == "dalfox":
+                acc.add(host, _DALFOX_RULE, "finding", line)
+            else:  # nuclei and any nuclei-shaped scanner
+                acc.add(host, _nuclei_signal_rule(line), "finding", line)
+    return acc.signals()
+
+
+def scan_signals(
+    *,
+    ports: list[str],
+    urls: list[str],
+    hosts: list[str],
+    findings: dict[str, list[str]] | None = None,
+) -> list[Signal]:
     """Run every matcher over the recon inputs and return the flat signal set."""
     signals: list[Signal] = []
     signals += signals_from_ports(ports)
     signals += signals_from_paths(urls)
     signals += signals_from_params(urls)
     signals += signals_from_labels(hosts)
+    if findings:
+        signals += signals_from_findings(findings)
     return signals

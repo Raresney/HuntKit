@@ -31,6 +31,9 @@ _URLS = "urls/urls.txt"
 _PORTS = "recon/ports.txt"
 _SUBS = "recon/subdomains.txt"
 _RESOLVED = "recon/resolved.txt"
+# Active-scan output (written by the scanner layer); optional. Named here as a
+# constant rather than imported, so intel stays independent of the scanner.
+_FINDINGS = "scans/findings.json"
 
 # Human names for the bug-class playbook ids. The knowledge base owns the
 # playbook catalog, so names come from there — one source of truth, and an
@@ -183,6 +186,25 @@ def _host_pool(ws: Workspace, live: list[str]) -> list[str]:
     return sorted(h.lower() for h in pool if h.strip())
 
 
+def _read_findings(ws: Workspace) -> dict[str, list[str]]:
+    """Scanner findings keyed by tool, or empty if no scan has run / file is bad."""
+    path = ws.path(_FINDINGS)
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(fs.read_text(path))
+    except (ValueError, OSError):
+        return {}
+    tools = data.get("tools") if isinstance(data, dict) else None
+    if not isinstance(tools, dict):
+        return {}
+    return {
+        str(tool): [str(x) for x in lines]
+        for tool, lines in tools.items()
+        if isinstance(lines, list)
+    }
+
+
 def analyze(ws: Workspace) -> IntelReport:
     """Score a workspace's recon surface into a prioritised intel report."""
     live = ws.read_lines(_LIVE)
@@ -190,8 +212,9 @@ def analyze(ws: Workspace) -> IntelReport:
     ports = ws.read_lines(_PORTS)
     hosts = _host_pool(ws, live)
     url_pool = list(dict.fromkeys(live + urls))  # dedupe, keep order
+    findings = _read_findings(ws)
 
-    signals = scan_signals(ports=ports, urls=url_pool, hosts=hosts)
+    signals = scan_signals(ports=ports, urls=url_pool, hosts=hosts, findings=findings)
 
     by_host: dict[str, list[Signal]] = defaultdict(list)
     for s in signals:
