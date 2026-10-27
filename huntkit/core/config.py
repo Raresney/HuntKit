@@ -30,16 +30,16 @@ CONFIG_FILENAME = "huntkit.yaml"
 class GeneralConfig:
     workspace_path: str = "~/.huntkit"
     threads: int = 20
-    rate: int = 150          # requests/sec hint passed to rate-aware tools
-    timeout: int = 300       # per-command seconds
-    retry: int = 1           # retries on transient failure
+    rate: int = 150  # requests/sec hint passed to rate-aware tools
+    timeout: int = 300  # per-command seconds
+    retry: int = 1  # retries on transient failure
     default_report_format: str = "markdown"
     color: bool = True
 
 
 @dataclass
 class HttpConfig:
-    proxy: Optional[str] = None            # e.g. http://127.0.0.1:8080 (Burp)
+    proxy: Optional[str] = None  # e.g. http://127.0.0.1:8080 (Burp)
     user_agent: str = "HuntKit/0.2 (+https://github.com/Raresney/HuntKit)"
     headers: dict[str, str] = field(default_factory=dict)
     rate_limit: int = 150
@@ -65,17 +65,17 @@ class WordlistConfig:
 
 @dataclass
 class NucleiConfig:
-    templates: Optional[str] = None        # custom template dir
+    templates: Optional[str] = None  # custom template dir
     severity: str = "low,medium,high,critical"
     extra_args: list[str] = field(default_factory=list)
 
 
 @dataclass
 class AIConfig:
-    provider: str = "ollama"               # ollama|openai|claude|gemini
+    provider: str = "ollama"  # ollama|openai|claude|gemini
     model: str = "llama3.2"
     endpoint: str = "http://127.0.0.1:11434"
-    require_approval: bool = True          # never send engagement data silently
+    require_approval: bool = True  # never send engagement data silently
     max_context_items: int = 40
 
 
@@ -148,7 +148,7 @@ class Config:
         # API keys: HUNTKIT_APIKEY_<NAME>
         for env_key, val in os.environ.items():
             if env_key.startswith("HUNTKIT_APIKEY_"):
-                self.api_keys[env_key[len("HUNTKIT_APIKEY_"):].lower()] = val
+                self.api_keys[env_key[len("HUNTKIT_APIKEY_") :].lower()] = val
 
 
 # --------------------------------------------------------------------------

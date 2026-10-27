@@ -25,7 +25,7 @@ class AppContext:
     runner: CommandRunner
     cache: Cache
     registry: PluginRegistry
-    base: Optional[Path] = None      # workspace base override (--workspace)
+    base: Optional[Path] = None  # workspace base override (--workspace)
 
     @classmethod
     def build(

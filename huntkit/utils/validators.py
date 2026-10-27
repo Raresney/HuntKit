@@ -77,9 +77,7 @@ def normalise_domain(value: str) -> str:
 
 
 # Characters allowed in a filesystem-safe slug.
-_SAFE_CHARS = frozenset(
-    "-_.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-)
+_SAFE_CHARS = frozenset("-_.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
 
 def sanitize_filename(name: str, *, fallback: str = "default", max_len: int = 120) -> str:

@@ -23,8 +23,10 @@ from .builder import Report, build
 # Canonical output formats.
 FORMATS = ("md", "html", "json", "pdf")
 _ALIASES = {
-    "md": "md", "markdown": "md",
-    "html": "html", "htm": "html",
+    "md": "md",
+    "markdown": "md",
+    "html": "html",
+    "htm": "html",
     "json": "json",
     "pdf": "pdf",
 }
@@ -78,9 +80,9 @@ def _write_pdf(ws: Workspace, report: Report, out: Path | None) -> Written:
             "no PDF backend (install `weasyprint`) — wrote print-ready HTML "
             "instead; open it and use Print → Save as PDF.",
         )
-    fs.ensure_dir(target.parent)                                   # pragma: no cover
-    weasyprint.HTML(string=html).write_pdf(str(target))           # pragma: no cover
-    return Written(target)                                        # pragma: no cover
+    fs.ensure_dir(target.parent)  # pragma: no cover
+    weasyprint.HTML(string=html).write_pdf(str(target))  # pragma: no cover
+    return Written(target)  # pragma: no cover
 
 
 def generate(ws: Workspace, fmt: str = "md", out: Path | None = None) -> Written:

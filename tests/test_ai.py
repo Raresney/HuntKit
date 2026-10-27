@@ -29,8 +29,7 @@ def _seed(tmp_path) -> Workspace:
     ws = Workspace.open("acme", base=tmp_path)
     ws.append_unique("recon/subdomains.txt", ["api.dev.example.com", "admin.example.com"])
     ws.append_unique("recon/ports.txt", ["admin.example.com:6379"])
-    ws.append_unique("urls/urls.txt",
-                     ["https://api.dev.example.com/admin?id=5&redirect=http://x"])
+    ws.append_unique("urls/urls.txt", ["https://api.dev.example.com/admin?id=5&redirect=http://x"])
     ws.set_scope(["*.example.com"], [])
     return ws
 
@@ -49,8 +48,8 @@ class TestKeys:
 
     def test_availability(self, monkeypatch):
         cfg = Config()
-        assert OllamaProvider().available(cfg) is True        # local always attemptable
-        assert AnthropicProvider().available(cfg) is False    # no key
+        assert OllamaProvider().available(cfg) is True  # local always attemptable
+        assert AnthropicProvider().available(cfg) is False  # no key
         monkeypatch.setenv("OPENAI_API_KEY", "k")
         assert OpenAIProvider().available(cfg) is True
 
@@ -58,18 +57,24 @@ class TestKeys:
 class TestRequestShapes:
     def test_ollama_hits_chat_endpoint(self, monkeypatch):
         seen = {}
-        monkeypatch.setattr(providers, "_post_json",
-                            lambda url, h, p, timeout: seen.update(url=url, p=p)
-                            or {"message": {"content": "x"}})
+        monkeypatch.setattr(
+            providers,
+            "_post_json",
+            lambda url, h, p, timeout: seen.update(url=url, p=p) or {"message": {"content": "x"}},
+        )
         out = OllamaProvider().complete("s", "u", model="llama3.2", config=Config())
         assert out == "x"
         assert seen["url"].endswith("/api/chat") and seen["p"]["stream"] is False
 
     def test_anthropic_messages_contract(self, monkeypatch):
         seen = {}
-        monkeypatch.setattr(providers, "_post_json",
-                            lambda url, h, p, timeout: seen.update(url=url, h=h, p=p)
-                            or {"content": [{"type": "text", "text": "hi"}]})
+        monkeypatch.setattr(
+            providers,
+            "_post_json",
+            lambda url, h, p, timeout: (
+                seen.update(url=url, h=h, p=p) or {"content": [{"type": "text", "text": "hi"}]}
+            ),
+        )
         cfg = Config()
         cfg.api_keys["anthropic"] = "k"
         out = AnthropicProvider().complete("sys", "usr", model="claude-opus-4-8", config=cfg)
@@ -82,17 +87,20 @@ class TestRequestShapes:
 
     def test_openai_bearer_auth(self, monkeypatch):
         seen = {}
-        monkeypatch.setattr(providers, "_post_json",
-                            lambda url, h, p, timeout: seen.update(h=h)
-                            or {"choices": [{"message": {"content": "ok"}}]})
+        monkeypatch.setattr(
+            providers,
+            "_post_json",
+            lambda url, h, p, timeout: (
+                seen.update(h=h) or {"choices": [{"message": {"content": "ok"}}]}
+            ),
+        )
         cfg = Config()
         cfg.api_keys["openai"] = "k"
         out = OpenAIProvider().complete("s", "u", model="gpt-4o-mini", config=cfg)
         assert out == "ok" and seen["h"]["authorization"] == "Bearer k"
 
     def test_empty_reply_raises(self, monkeypatch):
-        monkeypatch.setattr(providers, "_post_json",
-                            lambda *a, **k: {"message": {"content": ""}})
+        monkeypatch.setattr(providers, "_post_json", lambda *a, **k: {"message": {"content": ""}})
         with pytest.raises(ProviderError):
             OllamaProvider().complete("s", "u", model="m", config=Config())
 
@@ -138,7 +146,7 @@ class TestGate:
         prov = _Stub()
         with pytest.raises(ApprovalDenied):
             Advisor(prov, Config()).advise(report, approve=lambda _t: False)
-        assert prov.calls == 0                       # never reached the network
+        assert prov.calls == 0  # never reached the network
 
     def test_cloud_missing_callback_denies(self, tmp_path):
         report = analyze(_seed(tmp_path))
@@ -187,9 +195,10 @@ class TestCli:
     def test_local_runs_and_stays_local(self, home, monkeypatch):
         runner.invoke(app, ["init", "acme", "-s", "*.example.com"])
         _seed(home)
-        monkeypatch.setattr(providers, "_post_json",
-                            lambda *a, **k: {"message": {"content": "PLAN: redis first"}})
-        result = runner.invoke(app, ["advise", "-p", "acme"])   # default provider = ollama
+        monkeypatch.setattr(
+            providers, "_post_json", lambda *a, **k: {"message": {"content": "PLAN: redis first"}}
+        )
+        result = runner.invoke(app, ["advise", "-p", "acme"])  # default provider = ollama
         assert result.exit_code == 0
         assert "PLAN: redis first" in result.stdout and "data stayed on" in result.stdout
 
@@ -212,8 +221,11 @@ class TestCli:
         runner.invoke(app, ["init", "acme", "-s", "*.example.com"])
         _seed(home)
         monkeypatch.setenv("HUNTKIT_APIKEY_ANTHROPIC", "k")
-        monkeypatch.setattr(providers, "_post_json",
-                            lambda *a, **k: {"content": [{"type": "text", "text": "CLOUD PLAN"}]})
+        monkeypatch.setattr(
+            providers,
+            "_post_json",
+            lambda *a, **k: {"content": [{"type": "text", "text": "CLOUD PLAN"}]},
+        )
         result = runner.invoke(app, ["advise", "-p", "acme", "--provider", "claude", "--yes"])
         assert result.exit_code == 0 and "CLOUD PLAN" in result.stdout
 

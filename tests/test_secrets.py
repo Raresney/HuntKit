@@ -19,7 +19,7 @@ runner = CliRunner()
 _AKIA = "AKIAIOSFODNN7EXAMPLE"
 _GHP = "ghp_" + "a" * 36
 _AIZA = "AIza" + "B" * 35
-_HIGH_ENTROPY = "aT9xQ2w8ZkLm5RpV"   # looks like a random key value
+_HIGH_ENTROPY = "aT9xQ2w8ZkLm5RpV"  # looks like a random key value
 
 
 def _sample() -> str:
@@ -28,8 +28,8 @@ def _sample() -> str:
         f"headers.set('Authorization', 'token {_GHP}');\n"
         f'const g = "{_AIZA}";\n'
         f'var cfg = {{api_key: "{_HIGH_ENTROPY}"}};\n'
-        'password = "password";\n'                       # low entropy -> filtered
-        '-----BEGIN RSA PRIVATE KEY-----\n'
+        'password = "password";\n'  # low entropy -> filtered
+        "-----BEGIN RSA PRIVATE KEY-----\n"
         'const api = "/api/v2/users?id=1"; fetch("https://x.com/internal/admin");\n'
         'img = "/assets/logo.png";\n'
     )
@@ -45,15 +45,20 @@ class TestPatterns:
 
     def test_catalog_is_well_formed(self):
         ids = [p.id for p in SECRET_PATTERNS]
-        assert len(ids) == len(set(ids))               # unique ids
+        assert len(ids) == len(set(ids))  # unique ids
         for p in SECRET_PATTERNS:
             assert isinstance(p.severity, Severity)
-            assert p.regex.groups >= p.group            # declared group exists
+            assert p.regex.groups >= p.group  # declared group exists
 
     def test_known_keys_match(self):
         ids = {h.id for h in scan_text(_sample())}
-        assert {"aws-access-key", "github-token", "gcp-api-key",
-                "generic-secret", "private-key"} <= ids
+        assert {
+            "aws-access-key",
+            "github-token",
+            "gcp-api-key",
+            "generic-secret",
+            "private-key",
+        } <= ids
 
     def test_low_entropy_generic_is_filtered(self):
         # the literal word "password" must not be flagged as a generic secret
@@ -82,11 +87,11 @@ class TestScanner:
 
     def test_dedupes_repeat_on_same_line(self):
         line = f'a="{_AKIA}" b="{_AKIA}"'
-        assert len(scan_text(line)) == 1               # same value, same line -> one hit
+        assert len(scan_text(line)) == 1  # same value, same line -> one hit
 
     def test_scan_paths_walks_and_skips_binary(self, tmp_path):
         (tmp_path / "a.js").write_text(f'k="{_AKIA}"', encoding="utf-8")
-        (tmp_path / "logo.png").write_bytes(_AKIA.encode())   # binary ext -> skipped
+        (tmp_path / "logo.png").write_bytes(_AKIA.encode())  # binary ext -> skipped
         hits = scan_paths([tmp_path])
         assert len(hits) == 1 and hits[0].id == "aws-access-key"
 
@@ -113,17 +118,18 @@ class TestCli:
         result = runner.invoke(app, ["secrets", str(tmp_path)])
         assert result.exit_code == 0
         assert "critical" in result.stdout and "AWS access key" in result.stdout
-        assert _AKIA not in result.stdout                  # redacted in the table
+        assert _AKIA not in result.stdout  # redacted in the table
 
     def test_endpoints_and_json_out(self, tmp_path):
-        (tmp_path / "app.js").write_text(f'var k="{_AKIA}"; fetch("/api/me"); i="/x.png";',
-                                         encoding="utf-8")
+        (tmp_path / "app.js").write_text(
+            f'var k="{_AKIA}"; fetch("/api/me"); i="/x.png";', encoding="utf-8"
+        )
         out = tmp_path / "sec.json"
         result = runner.invoke(app, ["secrets", str(tmp_path), "--endpoints", "--out", str(out)])
         assert result.exit_code == 0 and "/api/me" in result.stdout
         data = json.loads(out.read_text(encoding="utf-8"))
         assert data["secrets"] and data["endpoints"] == ["/api/me"]
-        assert _AKIA not in out.read_text(encoding="utf-8")   # redacted in JSON too
+        assert _AKIA not in out.read_text(encoding="utf-8")  # redacted in JSON too
 
     def test_missing_path_exits_2(self, tmp_path):
         result = runner.invoke(app, ["secrets", str(tmp_path / "nope")])

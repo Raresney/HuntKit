@@ -87,10 +87,7 @@ class ScanSummary:
 
 def scan_plugins(registry: PluginRegistry) -> list[ToolPlugin]:
     """The batch scanners: SCAN-category plugins that consume a URL list via stdin."""
-    return [
-        p for p in registry.by_category(Category.SCAN)
-        if p.input_mode is InputMode.STDIN
-    ]
+    return [p for p in registry.by_category(Category.SCAN) if p.input_mode is InputMode.STDIN]
 
 
 def scan_targets(ws: Workspace) -> list[str]:
@@ -145,8 +142,9 @@ class Scanner:
             chosen = [p for p in chosen if p.name in wanted]
 
         self.ws.state.start(SCAN_STATE)
-        self._emit({"event": "scan_start", "targets": len(targets),
-                    "tools": [p.name for p in chosen]})
+        self._emit(
+            {"event": "scan_start", "targets": len(targets), "tools": [p.name for p in chosen]}
+        )
 
         # no targets: record and stop — nothing to feed the scanners
         if not targets:
@@ -155,8 +153,10 @@ class Scanner:
             return summary
 
         ctx = PluginContext(
-            config=self.config, runner=self.runner,
-            inputs=targets, extra={"use_cache": self.use_cache},
+            config=self.config,
+            runner=self.runner,
+            inputs=targets,
+            extra={"use_cache": self.use_cache},
         )
 
         results: dict[str, PluginResult] = {}
@@ -168,7 +168,10 @@ class Scanner:
                     results[name] = fut.result()
                 except Exception as exc:  # a crashing scanner must not sink the run
                     results[name] = PluginResult(
-                        name, Capability.FINDING, skipped=True, reason=f"error: {exc}",
+                        name,
+                        Capability.FINDING,
+                        skipped=True,
+                        reason=f"error: {exc}",
                     )
 
         # merge + persist on the main thread (no write races)
@@ -177,10 +180,17 @@ class Scanner:
 
         self._write_combined(summary)
         self.ws.state.set_count("findings", summary.total_findings)
-        self.ws.state.done(SCAN_STATE, targets=len(targets),
-                           findings=summary.total_findings, ran=summary.ran)
-        self._emit({"event": "scan_done", "targets": len(targets),
-                    "findings": summary.total_findings, "ran": summary.ran})
+        self.ws.state.done(
+            SCAN_STATE, targets=len(targets), findings=summary.total_findings, ran=summary.ran
+        )
+        self._emit(
+            {
+                "event": "scan_done",
+                "targets": len(targets),
+                "findings": summary.total_findings,
+                "ran": summary.ran,
+            }
+        )
         return summary
 
     def _finalize(self, name: str, result: Optional[PluginResult]) -> ScanOutcome:
@@ -203,9 +213,7 @@ class Scanner:
             "targets": summary.targets,
             "tools": {o.tool: o.findings for o in summary.outcomes if o.ran},
         }
-        self.ws.path(FINDINGS_JSON).write_text(
-            json.dumps(payload, indent=2), encoding="utf-8"
-        )
+        self.ws.path(FINDINGS_JSON).write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
 def run_scan(
@@ -221,6 +229,11 @@ def run_scan(
 ) -> ScanSummary:
     """Convenience wrapper: build a :class:`Scanner` and run it once."""
     return Scanner(
-        ws, config, runner=runner, registry=registry, on_event=on_event,
-        threads=threads, use_cache=use_cache,
+        ws,
+        config,
+        runner=runner,
+        registry=registry,
+        on_event=on_event,
+        threads=threads,
+        use_cache=use_cache,
     ).run(tools=tools)

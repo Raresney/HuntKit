@@ -28,8 +28,9 @@ class TestProcess:
         assert r.code == process.TIMEOUT
 
     def test_stdin_passthrough(self):
-        r = process.execute([sys.executable, "-c", "import sys; print(sys.stdin.read().upper())"],
-                            stdin_data="abc")
+        r = process.execute(
+            [sys.executable, "-c", "import sys; print(sys.stdin.read().upper())"], stdin_data="abc"
+        )
         assert "ABC" in r.stdout
 
 

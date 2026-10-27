@@ -84,8 +84,7 @@ class StateStore:
         self.created = data.get("created", self.created)
         self.counts = data.get("counts", {})
         self.stages = {
-            name: StageRecord.from_dict(rec)
-            for name, rec in data.get("stages", {}).items()
+            name: StageRecord.from_dict(rec) for name, rec in data.get("stages", {}).items()
         }
 
     def save(self) -> None:

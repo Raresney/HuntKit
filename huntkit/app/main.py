@@ -62,7 +62,10 @@ def _root(
         None, "--config", "-c", help="Path to a huntkit.yaml.", metavar="PATH"
     ),
     workspace: Optional[Path] = typer.Option(
-        None, "--workspace", "-w", help="Workspace base dir (default ~/.huntkit).",
+        None,
+        "--workspace",
+        "-w",
+        help="Workspace base dir (default ~/.huntkit).",
     ),
     verbose: bool = typer.Option(False, "--verbose", help="Verbose (debug) logging."),
     quiet: bool = typer.Option(False, "--quiet", help="Errors only."),
@@ -111,8 +114,10 @@ def doctor(ctx: typer.Context) -> None:
     term.console.print(table)
 
     if missing:
-        term.warn(f"{missing}/{len(registry)} tools missing — those stages are skipped, "
-                  "HuntKit still runs.")
+        term.warn(
+            f"{missing}/{len(registry)} tools missing — those stages are skipped, "
+            "HuntKit still runs."
+        )
     else:
         term.ok("full toolchain present.")
     term.info(f"workspace root: {app_ctx.config.workspace_root}")
@@ -229,10 +234,16 @@ def recon(
     term.banner(f"recon {domain}  ->  {program}")
     stages = None if stage == "all" else [stage]
     summary = run_recon(
-        ws, app_ctx.config, domain,
-        stages=stages, resume=not fresh,
-        runner=app_ctx.runner, registry=app_ctx.registry,
-        on_event=_render_event, threads=threads, use_cache=not no_cache,
+        ws,
+        app_ctx.config,
+        domain,
+        stages=stages,
+        resume=not fresh,
+        runner=app_ctx.runner,
+        registry=app_ctx.registry,
+        on_event=_render_event,
+        threads=threads,
+        use_cache=not no_cache,
     )
     _print_summary(summary, ws)
 
@@ -273,7 +284,10 @@ def scan(
         None, "--program", "-p", help="Workspace to scan (default: the only one)."
     ),
     tool: Optional[list[str]] = typer.Option(
-        None, "--tool", "-T", help="Restrict to these scanners (repeatable; default: all available)."
+        None,
+        "--tool",
+        "-T",
+        help="Restrict to these scanners (repeatable; default: all available).",
     ),
     threads: Optional[int] = typer.Option(
         None, "--threads", "-t", help="Concurrency (default: config general.threads)."
@@ -292,14 +306,21 @@ def scan(
     ws = Workspace.open(program, config=app_ctx.config, base=app_ctx.base)
     term.banner(f"scan — {program}")
     summary = run_scan(
-        ws, app_ctx.config, tools=tool,
-        runner=app_ctx.runner, registry=app_ctx.registry,
-        on_event=_render_scan_event, threads=threads, use_cache=not no_cache,
+        ws,
+        app_ctx.config,
+        tools=tool,
+        runner=app_ctx.runner,
+        registry=app_ctx.registry,
+        on_event=_render_scan_event,
+        threads=threads,
+        use_cache=not no_cache,
     )
 
     if summary.targets == 0:
         term.warn(f"no in-scope URLs to scan for '{program}'.")
-        term.info(f"gather some first:  huntkit recon <domain> -p {program}  (the live & urls stages)")
+        term.info(
+            f"gather some first:  huntkit recon <domain> -p {program}  (the live & urls stages)"
+        )
         raise typer.Exit(0)
 
     if not summary.ran:
@@ -316,8 +337,10 @@ def _print_scan_summary(summary: ScanSummary, ws: Workspace) -> None:
         status = f"{o.count} finding(s)" if o.ran else f"[muted]skipped: {o.reason}[/muted]"
         rows.append((o.tool, status))
     term.print_table("Scan summary", ["scanner", "result"], rows)
-    term.ok(f"{summary.total_findings} finding(s) across {summary.targets} target(s). "
-            f"Details under {ws.path('scans')}")
+    term.ok(
+        f"{summary.total_findings} finding(s) across {summary.targets} target(s). "
+        f"Details under {ws.path('scans')}"
+    )
     if summary.total_findings:
         term.info(f"fold findings into host scoring:  huntkit analyze -p {summary.program}")
 
@@ -349,20 +372,30 @@ def analyze(
         raise typer.Exit(0)
 
     term.banner(f"intel — {program}")
-    term.info("hosts by priority: " + "  ".join(
-        f"[{p.style}]{p.label}[/{p.style}] {report.summary[p.label]}"
-        for p in sorted(Priority, reverse=True) if report.summary[p.label]
-    ))
+    term.info(
+        "hosts by priority: "
+        + "  ".join(
+            f"[{p.style}]{p.label}[/{p.style}] {report.summary[p.label]}"
+            for p in sorted(Priority, reverse=True)
+            if report.summary[p.label]
+        )
+    )
 
     rows = []
     for h in report.hosts[:top]:
         pr = h.priority
-        rows.append((
-            h.host, f"[{pr.style}]{pr.label}[/{pr.style}]",
-            str(h.score), str(len(h.signals)),
-            ", ".join(h.playbooks[:4]) or "-",
-        ))
-    term.print_table("Prioritised hosts", ["host", "priority", "score", "signals", "playbooks"], rows)
+        rows.append(
+            (
+                h.host,
+                f"[{pr.style}]{pr.label}[/{pr.style}]",
+                str(h.score),
+                str(len(h.signals)),
+                ", ".join(h.playbooks[:4]) or "-",
+            )
+        )
+    term.print_table(
+        "Prioritised hosts", ["host", "priority", "score", "signals", "playbooks"], rows
+    )
 
     _print_notable(report, top)
     _print_attack_paths(report, top)
@@ -380,8 +413,12 @@ def _print_notable(report: IntelReport, top: int) -> None:
     if not hot:
         return
     rows = [
-        (f"[{s.severity.style}]{s.severity.label}[/{s.severity.style}]",
-         s.host, s.title, s.evidence)
+        (
+            f"[{s.severity.style}]{s.severity.label}[/{s.severity.style}]",
+            s.host,
+            s.title,
+            s.evidence,
+        )
         for s in hot[:top]
     ]
     term.print_table("Notable exposures", ["severity", "host", "finding", "evidence"], rows)
@@ -394,13 +431,20 @@ def _print_attack_paths(report: IntelReport, top: int) -> None:
     rows = []
     for p in paths[:top]:
         where = ", ".join(p.hosts[:3]) + ("  …" if len(p.hosts) > 3 else "")
-        rows.append((
-            p.playbook, p.name,
-            f"[{p.severity.style}]{p.severity.label}[/{p.severity.style}]",
-            str(len(p.hosts)), where,
-        ))
-    term.print_table("Attack paths (highest impact first)",
-                     ["id", "playbook", "severity", "hosts", "where"], rows)
+        rows.append(
+            (
+                p.playbook,
+                p.name,
+                f"[{p.severity.style}]{p.severity.label}[/{p.severity.style}]",
+                str(len(p.hosts)),
+                where,
+            )
+        )
+    term.print_table(
+        "Attack paths (highest impact first)",
+        ["id", "playbook", "severity", "hosts", "where"],
+        rows,
+    )
     term.info("open a playbook for the how-to:  huntkit playbook <id>")
 
 
@@ -443,10 +487,14 @@ def report(
     term.banner(f"report — {program}")
     intel = rep.intel
     if intel.signals:
-        term.info("hosts by priority: " + "  ".join(
-            f"[{p.style}]{p.label}[/{p.style}] {intel.summary[p.label]}"
-            for p in sorted(Priority, reverse=True) if intel.summary[p.label]
-        ))
+        term.info(
+            "hosts by priority: "
+            + "  ".join(
+                f"[{p.style}]{p.label}[/{p.style}] {intel.summary[p.label]}"
+                for p in sorted(Priority, reverse=True)
+                if intel.summary[p.label]
+            )
+        )
     term.ok(f"{canonical} report → {written.path}")
     if written.note:
         term.warn(written.note)
@@ -460,9 +508,7 @@ def playbook(
     name: Optional[str] = typer.Argument(
         None, help="Bug-class id (e.g. ssrf). Omit to list every playbook."
     ),
-    md: bool = typer.Option(
-        False, "--md", help="Print raw Markdown (for reports / copy-paste)."
-    ),
+    md: bool = typer.Option(False, "--md", help="Print raw Markdown (for reports / copy-paste)."),
 ) -> None:
     """Show a bug-class playbook: how to find it, payloads, bypasses, refs."""
     if not name:
@@ -551,7 +597,9 @@ def advise(
     report = run_analyze(ws)
     if not report.signals:
         term.warn(f"no findings to advise on for '{program}'.")
-        term.info(f"gather & score first:  huntkit recon <domain> -p {program} && huntkit analyze -p {program}")
+        term.info(
+            f"gather & score first:  huntkit recon <domain> -p {program} && huntkit analyze -p {program}"
+        )
         raise typer.Exit(0)
 
     name = (provider or app_ctx.config.ai.provider or "ollama").strip().lower()
@@ -591,7 +639,9 @@ def advise(
     term.console.print(advice.answer, markup=False, highlight=False)
 
 
-def _confirm_cloud_send(provider: str, host: str, model: str, payload: str, assume_yes: bool) -> bool:
+def _confirm_cloud_send(
+    provider: str, host: str, model: str, payload: str, assume_yes: bool
+) -> bool:
     """Show exactly what will leave the machine, then require a clear yes."""
     term.warn(f"'{provider}' is a CLOUD model — this sends your recon data to {host}.")
     term.info(f"model: {model}   destination: {host}")
@@ -630,13 +680,20 @@ def secrets(
     term.banner("secrets scan")
     if hits:
         rows = [
-            (f"[{h.severity.style}]{h.severity.label}[/{h.severity.style}]",
-             h.title, f"{h.source}:{h.line}", h.match)
+            (
+                f"[{h.severity.style}]{h.severity.label}[/{h.severity.style}]",
+                h.title,
+                f"{h.source}:{h.line}",
+                h.match,
+            )
             for h in hits[:top]
         ]
-        term.print_table("Potential secrets (redacted)",
-                         ["severity", "type", "where", "match"], rows)
-        term.warn(f"{len(hits)} potential secret(s) — verify before reporting; values are redacted.")
+        term.print_table(
+            "Potential secrets (redacted)", ["severity", "type", "where", "match"], rows
+        )
+        term.warn(
+            f"{len(hits)} potential secret(s) — verify before reporting; values are redacted."
+        )
     else:
         term.ok("no secrets matched.")
 
@@ -664,9 +721,7 @@ def fingerprint(
     source: str = typer.Argument(
         "-", help="Header file, or - for stdin (e.g. curl -sI URL | huntkit fingerprint)."
     ),
-    out: Optional[Path] = typer.Option(
-        None, "--out", "-o", help="Write matches as JSON here."
-    ),
+    out: Optional[Path] = typer.Option(None, "--out", "-o", help="Write matches as JSON here."),
 ) -> None:
     """Identify CDN / WAF / cloud / tech from captured HTTP response headers."""
     if source == "-":
@@ -692,8 +747,10 @@ def fingerprint(
     term.print_table("Fingerprints", ["kind", "vendor", "evidence"], rows)
     if has_waf(matches):
         wafs = ", ".join(m.name for m in matches if m.kind == "waf")
-        term.warn(f"WAF present ({wafs}) — expect filtering; tune payloads/rate and "
-                  "consider origin-IP discovery.")
+        term.warn(
+            f"WAF present ({wafs}) — expect filtering; tune payloads/rate and "
+            "consider origin-IP discovery."
+        )
     if out:
         fs.write_text(out, json.dumps([m.to_dict() for m in matches], indent=2))
         term.ok(f"wrote {out}")

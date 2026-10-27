@@ -44,7 +44,7 @@ class Advice:
     model: str
     is_local: bool
     endpoint: str
-    prompt: str          # the exact context that was sent
+    prompt: str  # the exact context that was sent
     answer: str
 
 
@@ -113,13 +113,9 @@ class Advisor:
             and self.config.ai.require_approval
             and (approve is None or not approve(ctx))
         ):
-            raise ApprovalDenied(
-                f"sending recon data to '{self.provider.name}' was not approved"
-            )
+            raise ApprovalDenied(f"sending recon data to '{self.provider.name}' was not approved")
 
-        answer = self.provider.complete(
-            SYSTEM_PROMPT, ctx, model=model_id, config=self.config
-        )
+        answer = self.provider.complete(SYSTEM_PROMPT, ctx, model=model_id, config=self.config)
         return Advice(
             provider=self.provider.name,
             model=model_id,

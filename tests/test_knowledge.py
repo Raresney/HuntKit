@@ -49,11 +49,11 @@ class TestCatalog:
 
     def test_playbooks_are_well_formed(self):
         for pid, pb in PLAYBOOKS.items():
-            assert pb.id == pid                     # keyed by its own id
+            assert pb.id == pid  # keyed by its own id
             assert isinstance(pb.severity, Severity)
             assert pb.title.strip()
             assert pb.summary.strip() and pb.when.strip()
-            assert pb.detection                     # at least one detection step
+            assert pb.detection  # at least one detection step
 
     def test_references_look_like_links(self):
         for pb in all_playbooks():
@@ -75,8 +75,16 @@ class TestRendering:
     def test_to_dict_shape(self):
         d = PLAYBOOKS["idor"].to_dict()
         assert set(d) == {
-            "id", "title", "severity", "summary", "when",
-            "detection", "payloads", "bypasses", "tools", "references",
+            "id",
+            "title",
+            "severity",
+            "summary",
+            "when",
+            "detection",
+            "payloads",
+            "bypasses",
+            "tools",
+            "references",
         }
         assert d["severity"] == "high"
         assert d["references"][0]["url"].startswith("https://")
@@ -121,7 +129,7 @@ class TestCli:
         result = runner.invoke(app, ["playbook", "ssrf"])
         assert result.exit_code == 0
         assert "Payloads" in result.stdout
-        assert "169.254.169.254" in result.stdout   # a real payload rendered
+        assert "169.254.169.254" in result.stdout  # a real payload rendered
 
     def test_render_case_insensitive(self, home):
         result = runner.invoke(app, ["playbook", "SSRF"])
@@ -143,4 +151,4 @@ class TestCli:
     def test_unknown_exits_2(self, home):
         result = runner.invoke(app, ["playbook", "nope"])
         assert result.exit_code == 2
-        assert "pick one" in result.stdout          # id hint goes to stdout
+        assert "pick one" in result.stdout  # id hint goes to stdout

@@ -21,7 +21,7 @@ class FingerprintMatch:
     name: str
     kind: str
     severity: Severity
-    evidence: str          # the header that matched, e.g. "cf-ray: 7a1b…"
+    evidence: str  # the header that matched, e.g. "cf-ray: 7a1b…"
 
     def to_dict(self) -> dict:
         return {
@@ -66,7 +66,8 @@ def _evidence(rule, headers: dict[str, str]) -> str:
 def fingerprint_headers(headers: str | dict) -> list[FingerprintMatch]:
     """Return matched vendors for the given headers, WAF first then by kind."""
     hmap = (
-        parse_headers(headers) if isinstance(headers, str)
+        parse_headers(headers)
+        if isinstance(headers, str)
         else {str(k).lower(): str(v) for k, v in headers.items()}
     )
     out: list[FingerprintMatch] = []

@@ -39,11 +39,11 @@ class Signal:
     id: str
     title: str
     severity: Severity
-    category: str          # port | path | param | subdomain
+    category: str  # port | path | param | subdomain
     host: str
-    evidence: str          # a representative hit (first seen)
+    evidence: str  # a representative hit (first seen)
     playbooks: tuple[str, ...] = ()
-    count: int = 1         # how many raw hits collapsed into this signal
+    count: int = 1  # how many raw hits collapsed into this signal
 
     def to_dict(self) -> dict:
         return {
@@ -82,25 +82,39 @@ PORT_RULES: dict[str, Rule] = {
     "135": Rule("msrpc-open", "MSRPC exposed", Severity.MEDIUM),
     "139": Rule("netbios-open", "NetBIOS exposed", Severity.MEDIUM),
     "445": Rule("smb-open", "SMB exposed — null session / share enum", Severity.HIGH),
-    "1433": Rule("mssql-open", "MSSQL exposed — auth & injection surface", Severity.HIGH, ("sqli",)),
+    "1433": Rule(
+        "mssql-open", "MSSQL exposed — auth & injection surface", Severity.HIGH, ("sqli",)
+    ),
     "1521": Rule("oracle-open", "Oracle DB exposed", Severity.HIGH, ("sqli",)),
     "2375": Rule("docker-open", "Docker API exposed — unauth = host RCE", Severity.CRITICAL),
     "2379": Rule("etcd-open", "etcd exposed — cluster secrets", Severity.HIGH),
-    "3306": Rule("mysql-open", "MySQL exposed — auth surface, remote root?", Severity.HIGH, ("sqli",)),
+    "3306": Rule(
+        "mysql-open", "MySQL exposed — auth surface, remote root?", Severity.HIGH, ("sqli",)
+    ),
     "3389": Rule("rdp-open", "RDP exposed — CVE/BlueKeep, cred-spray risk", Severity.HIGH),
     "5432": Rule("postgres-open", "PostgreSQL exposed — auth surface", Severity.HIGH, ("sqli",)),
-    "5601": Rule("kibana-open", "Kibana exposed — often unauth data access", Severity.HIGH, ("authn",)),
+    "5601": Rule(
+        "kibana-open", "Kibana exposed — often unauth data access", Severity.HIGH, ("authn",)
+    ),
     "5900": Rule("vnc-open", "VNC exposed — weak/no auth", Severity.HIGH),
     "6379": Rule("redis-open", "Redis exposed — frequently unauth = RCE", Severity.CRITICAL),
     "8000": Rule("http-alt-8000", "Alt HTTP (8000) — dev/admin apps", Severity.LOW, ("bac",)),
-    "8080": Rule("http-alt-8080", "Alt HTTP (8080) — dev/admin panels, actuator", Severity.LOW, ("bac",)),
-    "8443": Rule("https-alt-8443", "Alt HTTPS (8443) — staging apps, weaker auth", Severity.LOW, ("bac",)),
+    "8080": Rule(
+        "http-alt-8080", "Alt HTTP (8080) — dev/admin panels, actuator", Severity.LOW, ("bac",)
+    ),
+    "8443": Rule(
+        "https-alt-8443", "Alt HTTPS (8443) — staging apps, weaker auth", Severity.LOW, ("bac",)
+    ),
     "8888": Rule("http-alt-8888", "Alt HTTP (8888) — notebooks/dev apps", Severity.LOW, ("bac",)),
     "9000": Rule("http-alt-9000", "Port 9000 — SonarQube/PHP-FPM/consoles", Severity.MEDIUM),
-    "9200": Rule("elastic-open", "Elasticsearch exposed — often unauth data dump", Severity.CRITICAL),
+    "9200": Rule(
+        "elastic-open", "Elasticsearch exposed — often unauth data dump", Severity.CRITICAL
+    ),
     "9300": Rule("elastic-transport", "Elasticsearch transport exposed", Severity.HIGH),
     "11211": Rule("memcached-open", "Memcached exposed — unauth, DDoS amp", Severity.HIGH),
-    "15672": Rule("rabbitmq-open", "RabbitMQ mgmt exposed — default creds", Severity.MEDIUM, ("authn",)),
+    "15672": Rule(
+        "rabbitmq-open", "RabbitMQ mgmt exposed — default creds", Severity.MEDIUM, ("authn",)
+    ),
     "27017": Rule("mongo-open", "MongoDB exposed — often no auth", Severity.CRITICAL),
     "6443": Rule("kube-api", "Kubernetes API exposed", Severity.HIGH),
     "10250": Rule("kubelet-open", "Kubelet exposed — unauth exec risk", Severity.HIGH),
@@ -119,25 +133,86 @@ PATH_RULES: tuple[tuple[str, Rule], ...] = (
     ("/.aws/", Rule("aws-creds", "Exposed .aws directory — cloud credentials", Severity.CRITICAL)),
     ("/.htaccess", Rule("htaccess", "Exposed .htaccess", Severity.MEDIUM)),
     ("/.ds_store", Rule("dsstore", "Exposed .DS_Store — path disclosure", Severity.LOW)),
-    ("/actuator", Rule("spring-actuator", "Spring Actuator — env/heapdump/SSRF surface", Severity.HIGH, ("ssrf",))),
-    ("/phpmyadmin", Rule("phpmyadmin", "phpMyAdmin panel exposed", Severity.HIGH, ("authn", "sqli"))),
+    (
+        "/actuator",
+        Rule(
+            "spring-actuator",
+            "Spring Actuator — env/heapdump/SSRF surface",
+            Severity.HIGH,
+            ("ssrf",),
+        ),
+    ),
+    (
+        "/phpmyadmin",
+        Rule("phpmyadmin", "phpMyAdmin panel exposed", Severity.HIGH, ("authn", "sqli")),
+    ),
     ("/adminer", Rule("adminer", "Adminer DB panel exposed", Severity.HIGH, ("authn", "sqli"))),
-    ("/jenkins", Rule("jenkins", "Jenkins exposed — script console / CVEs", Severity.HIGH, ("authn",))),
-    ("/wp-admin", Rule("wp-admin", "WordPress admin — enum, weak plugin CVEs", Severity.MEDIUM, ("authn", "bac"))),
-    ("/wp-login", Rule("wp-login", "WordPress login — brute/enum surface", Severity.MEDIUM, ("authn",))),
+    (
+        "/jenkins",
+        Rule("jenkins", "Jenkins exposed — script console / CVEs", Severity.HIGH, ("authn",)),
+    ),
+    (
+        "/wp-admin",
+        Rule(
+            "wp-admin",
+            "WordPress admin — enum, weak plugin CVEs",
+            Severity.MEDIUM,
+            ("authn", "bac"),
+        ),
+    ),
+    (
+        "/wp-login",
+        Rule("wp-login", "WordPress login — brute/enum surface", Severity.MEDIUM, ("authn",)),
+    ),
     ("/wp-json", Rule("wp-json", "WordPress REST API — user enum / authz", Severity.LOW, ("bac",))),
-    ("/xmlrpc.php", Rule("xmlrpc", "WordPress xmlrpc — brute/pingback SSRF", Severity.MEDIUM, ("authn", "ssrf"))),
-    ("/administrator", Rule("joomla-admin", "Joomla administrator panel", Severity.MEDIUM, ("authn", "bac"))),
-    ("/graphql", Rule("graphql", "GraphQL — introspection, batching, field authz", Severity.MEDIUM, ("bac", "idor"))),
-    ("/swagger", Rule("swagger", "Swagger UI — full endpoint map to test authz", Severity.LOW, ("bac", "idor"))),
-    ("/api-docs", Rule("api-docs", "API docs exposed — endpoint map", Severity.LOW, ("bac", "idor"))),
-    ("/openapi", Rule("openapi", "OpenAPI spec exposed — endpoint map", Severity.LOW, ("bac", "idor"))),
-    ("/server-status", Rule("apache-status", "Apache server-status — request/IP leak", Severity.MEDIUM)),
+    (
+        "/xmlrpc.php",
+        Rule(
+            "xmlrpc", "WordPress xmlrpc — brute/pingback SSRF", Severity.MEDIUM, ("authn", "ssrf")
+        ),
+    ),
+    (
+        "/administrator",
+        Rule("joomla-admin", "Joomla administrator panel", Severity.MEDIUM, ("authn", "bac")),
+    ),
+    (
+        "/graphql",
+        Rule(
+            "graphql",
+            "GraphQL — introspection, batching, field authz",
+            Severity.MEDIUM,
+            ("bac", "idor"),
+        ),
+    ),
+    (
+        "/swagger",
+        Rule(
+            "swagger", "Swagger UI — full endpoint map to test authz", Severity.LOW, ("bac", "idor")
+        ),
+    ),
+    (
+        "/api-docs",
+        Rule("api-docs", "API docs exposed — endpoint map", Severity.LOW, ("bac", "idor")),
+    ),
+    (
+        "/openapi",
+        Rule("openapi", "OpenAPI spec exposed — endpoint map", Severity.LOW, ("bac", "idor")),
+    ),
+    (
+        "/server-status",
+        Rule("apache-status", "Apache server-status — request/IP leak", Severity.MEDIUM),
+    ),
     ("/phpinfo", Rule("phpinfo", "phpinfo() exposed — env/config disclosure", Severity.MEDIUM)),
     ("/console", Rule("web-console", "Web console endpoint", Severity.MEDIUM, ("bac",))),
     ("/debug", Rule("debug-endpoint", "Debug endpoint — verbose errors/state", Severity.MEDIUM)),
-    ("/admin", Rule("admin-panel", "Admin path — privileged surface", Severity.MEDIUM, ("authn", "bac"))),
-    ("/internal", Rule("internal-path", "Internal path — should not be public", Severity.MEDIUM, ("bac",))),
+    (
+        "/admin",
+        Rule("admin-panel", "Admin path — privileged surface", Severity.MEDIUM, ("authn", "bac")),
+    ),
+    (
+        "/internal",
+        Rule("internal-path", "Internal path — should not be public", Severity.MEDIUM, ("bac",)),
+    ),
     ("/backup", Rule("backup-path", "Backup path — exposed archives/dumps", Severity.MEDIUM)),
     ("/.well-known/security.txt", Rule("securitytxt", "security.txt present", Severity.INFO)),
     (".sql", Rule("sql-dump", "SQL dump in URL — data exposure", Severity.HIGH)),
@@ -154,30 +229,178 @@ PATH_RULES: tuple[tuple[str, Rule], ...] = (
 # when a name could belong to several.
 # --------------------------------------------------------------------------
 _PARAM_RULES: tuple[tuple[tuple[str, ...], Rule], ...] = (
-    (("cmd", "exec", "command", "execute", "run", "ping", "code", "shell", "daemon", "cli"),
-     Rule("cmd-param", "Command-like parameter — probe for RCE", Severity.HIGH)),
-    (("url", "uri", "link", "redirect", "redir", "redirect_uri", "redirect_url", "next",
-      "dest", "destination", "return", "returnurl", "return_url", "continue", "callback",
-      "webhook", "feed", "forward", "out", "to", "imageurl", "image_url", "proxy", "fetch",
-      "load", "site", "domain", "host", "open"),
-     Rule("ssrf-param", "URL/redirect parameter — test SSRF & open-redirect", Severity.MEDIUM, ("ssrf",))),
-    (("password", "passwd", "pwd", "pass", "token", "access_token", "api_key", "apikey",
-      "secret", "auth", "authorization", "session", "sessionid", "jwt", "key"),
-     Rule("secret-param", "Secret in query string — credential exposure", Severity.MEDIUM, ("authn",))),
-    (("file", "filename", "path", "template", "include", "page", "doc", "document", "folder",
-      "dir", "root", "download", "pdf", "style", "lang", "view"),
-     Rule("lfi-param", "File/template parameter — test LFI/traversal & SSTI", Severity.MEDIUM, ("ssti",))),
-    (("filter", "sort", "order", "orderby", "order_by", "where", "column", "select", "field", "sortby"),
-     Rule("sqli-param", "Filter/sort parameter — reaches the data store", Severity.LOW, ("sqli",))),
-    (("q", "s", "search", "query", "keyword", "kw", "term", "name", "title", "comment",
-      "message", "msg", "content", "description", "desc", "feedback", "body", "text", "subject"),
-     Rule("reflect-param", "Reflected text parameter — test XSS & SQLi", Severity.LOW, ("xss", "sqli"))),
-    (("id", "uid", "user", "userid", "user_id", "account", "accountid", "account_id",
-      "orderid", "order_id", "invoice", "number", "pid", "gid", "item", "itemid", "cart",
-      "profile", "customer", "customerid", "groupid", "record", "ref"),
-     Rule("idor-param", "Object-id parameter — test IDOR / BOLA", Severity.LOW, ("idor",))),
-    (("xml", "data", "input", "xmlfile"),
-     Rule("xxe-param", "XML/data parameter — test XXE", Severity.LOW)),
+    (
+        ("cmd", "exec", "command", "execute", "run", "ping", "code", "shell", "daemon", "cli"),
+        Rule("cmd-param", "Command-like parameter — probe for RCE", Severity.HIGH),
+    ),
+    (
+        (
+            "url",
+            "uri",
+            "link",
+            "redirect",
+            "redir",
+            "redirect_uri",
+            "redirect_url",
+            "next",
+            "dest",
+            "destination",
+            "return",
+            "returnurl",
+            "return_url",
+            "continue",
+            "callback",
+            "webhook",
+            "feed",
+            "forward",
+            "out",
+            "to",
+            "imageurl",
+            "image_url",
+            "proxy",
+            "fetch",
+            "load",
+            "site",
+            "domain",
+            "host",
+            "open",
+        ),
+        Rule(
+            "ssrf-param",
+            "URL/redirect parameter — test SSRF & open-redirect",
+            Severity.MEDIUM,
+            ("ssrf",),
+        ),
+    ),
+    (
+        (
+            "password",
+            "passwd",
+            "pwd",
+            "pass",
+            "token",
+            "access_token",
+            "api_key",
+            "apikey",
+            "secret",
+            "auth",
+            "authorization",
+            "session",
+            "sessionid",
+            "jwt",
+            "key",
+        ),
+        Rule(
+            "secret-param",
+            "Secret in query string — credential exposure",
+            Severity.MEDIUM,
+            ("authn",),
+        ),
+    ),
+    (
+        (
+            "file",
+            "filename",
+            "path",
+            "template",
+            "include",
+            "page",
+            "doc",
+            "document",
+            "folder",
+            "dir",
+            "root",
+            "download",
+            "pdf",
+            "style",
+            "lang",
+            "view",
+        ),
+        Rule(
+            "lfi-param",
+            "File/template parameter — test LFI/traversal & SSTI",
+            Severity.MEDIUM,
+            ("ssti",),
+        ),
+    ),
+    (
+        (
+            "filter",
+            "sort",
+            "order",
+            "orderby",
+            "order_by",
+            "where",
+            "column",
+            "select",
+            "field",
+            "sortby",
+        ),
+        Rule(
+            "sqli-param", "Filter/sort parameter — reaches the data store", Severity.LOW, ("sqli",)
+        ),
+    ),
+    (
+        (
+            "q",
+            "s",
+            "search",
+            "query",
+            "keyword",
+            "kw",
+            "term",
+            "name",
+            "title",
+            "comment",
+            "message",
+            "msg",
+            "content",
+            "description",
+            "desc",
+            "feedback",
+            "body",
+            "text",
+            "subject",
+        ),
+        Rule(
+            "reflect-param",
+            "Reflected text parameter — test XSS & SQLi",
+            Severity.LOW,
+            ("xss", "sqli"),
+        ),
+    ),
+    (
+        (
+            "id",
+            "uid",
+            "user",
+            "userid",
+            "user_id",
+            "account",
+            "accountid",
+            "account_id",
+            "orderid",
+            "order_id",
+            "invoice",
+            "number",
+            "pid",
+            "gid",
+            "item",
+            "itemid",
+            "cart",
+            "profile",
+            "customer",
+            "customerid",
+            "groupid",
+            "record",
+            "ref",
+        ),
+        Rule("idor-param", "Object-id parameter — test IDOR / BOLA", Severity.LOW, ("idor",)),
+    ),
+    (
+        ("xml", "data", "input", "xmlfile"),
+        Rule("xxe-param", "XML/data parameter — test XXE", Severity.LOW),
+    ),
 )
 
 PARAM_MAP: dict[str, Rule] = {}
@@ -192,46 +415,193 @@ for _names, _rule in _PARAM_RULES:
 # longest prefix ("dev01" -> dev).
 # --------------------------------------------------------------------------
 LABEL_RULES: tuple[tuple[str, Rule], ...] = (
-    ("dev", Rule("nonprod-host", "Non-prod host — typically weaker controls", Severity.MEDIUM, ("authn", "bac"))),
-    ("test", Rule("nonprod-host", "Non-prod host — typically weaker controls", Severity.MEDIUM, ("authn", "bac"))),
-    ("staging", Rule("nonprod-host", "Staging host — typically weaker controls", Severity.MEDIUM, ("authn", "bac"))),
-    ("stage", Rule("nonprod-host", "Staging host — typically weaker controls", Severity.MEDIUM, ("authn", "bac"))),
-    ("stg", Rule("nonprod-host", "Staging host — typically weaker controls", Severity.MEDIUM, ("authn", "bac"))),
-    ("uat", Rule("nonprod-host", "UAT host — typically weaker controls", Severity.MEDIUM, ("authn", "bac"))),
-    ("qa", Rule("nonprod-host", "QA host — typically weaker controls", Severity.MEDIUM, ("authn", "bac"))),
-    ("preprod", Rule("nonprod-host", "Pre-prod host — typically weaker controls", Severity.MEDIUM, ("authn", "bac"))),
-    ("sandbox", Rule("nonprod-host", "Sandbox host — typically weaker controls", Severity.MEDIUM, ("authn", "bac"))),
+    (
+        "dev",
+        Rule(
+            "nonprod-host",
+            "Non-prod host — typically weaker controls",
+            Severity.MEDIUM,
+            ("authn", "bac"),
+        ),
+    ),
+    (
+        "test",
+        Rule(
+            "nonprod-host",
+            "Non-prod host — typically weaker controls",
+            Severity.MEDIUM,
+            ("authn", "bac"),
+        ),
+    ),
+    (
+        "staging",
+        Rule(
+            "nonprod-host",
+            "Staging host — typically weaker controls",
+            Severity.MEDIUM,
+            ("authn", "bac"),
+        ),
+    ),
+    (
+        "stage",
+        Rule(
+            "nonprod-host",
+            "Staging host — typically weaker controls",
+            Severity.MEDIUM,
+            ("authn", "bac"),
+        ),
+    ),
+    (
+        "stg",
+        Rule(
+            "nonprod-host",
+            "Staging host — typically weaker controls",
+            Severity.MEDIUM,
+            ("authn", "bac"),
+        ),
+    ),
+    (
+        "uat",
+        Rule(
+            "nonprod-host",
+            "UAT host — typically weaker controls",
+            Severity.MEDIUM,
+            ("authn", "bac"),
+        ),
+    ),
+    (
+        "qa",
+        Rule(
+            "nonprod-host", "QA host — typically weaker controls", Severity.MEDIUM, ("authn", "bac")
+        ),
+    ),
+    (
+        "preprod",
+        Rule(
+            "nonprod-host",
+            "Pre-prod host — typically weaker controls",
+            Severity.MEDIUM,
+            ("authn", "bac"),
+        ),
+    ),
+    (
+        "sandbox",
+        Rule(
+            "nonprod-host",
+            "Sandbox host — typically weaker controls",
+            Severity.MEDIUM,
+            ("authn", "bac"),
+        ),
+    ),
     ("demo", Rule("nonprod-host", "Demo host — often stale/loose", Severity.LOW, ("authn", "bac"))),
     ("beta", Rule("nonprod-host", "Beta host — often stale/loose", Severity.LOW, ("authn", "bac"))),
-    ("old", Rule("legacy-host", "Legacy host — unpatched, forgotten", Severity.MEDIUM, ("authn", "bac"))),
-    ("legacy", Rule("legacy-host", "Legacy host — unpatched, forgotten", Severity.MEDIUM, ("authn", "bac"))),
+    (
+        "old",
+        Rule(
+            "legacy-host", "Legacy host — unpatched, forgotten", Severity.MEDIUM, ("authn", "bac")
+        ),
+    ),
+    (
+        "legacy",
+        Rule(
+            "legacy-host", "Legacy host — unpatched, forgotten", Severity.MEDIUM, ("authn", "bac")
+        ),
+    ),
     ("backup", Rule("legacy-host", "Backup host — stale data/config", Severity.MEDIUM)),
-    ("admin", Rule("admin-host", "Admin host — privileged surface", Severity.MEDIUM, ("authn", "bac"))),
-    ("internal", Rule("internal-host", "Internal host exposed publicly", Severity.MEDIUM, ("bac",))),
-    ("intranet", Rule("internal-host", "Intranet host exposed publicly", Severity.MEDIUM, ("bac",))),
+    (
+        "admin",
+        Rule("admin-host", "Admin host — privileged surface", Severity.MEDIUM, ("authn", "bac")),
+    ),
+    (
+        "internal",
+        Rule("internal-host", "Internal host exposed publicly", Severity.MEDIUM, ("bac",)),
+    ),
+    (
+        "intranet",
+        Rule("internal-host", "Intranet host exposed publicly", Severity.MEDIUM, ("bac",)),
+    ),
     ("corp", Rule("internal-host", "Corporate host exposed publicly", Severity.LOW, ("bac",))),
     ("vpn", Rule("vpn-host", "VPN endpoint — known-CVE surface", Severity.MEDIUM, ("authn",))),
     ("remote", Rule("remote-host", "Remote-access host", Severity.MEDIUM, ("authn",))),
-    ("jenkins", Rule("ci-host", "Jenkins/CI host — script console/CVEs", Severity.HIGH, ("authn",))),
-    ("gitlab", Rule("git-host", "GitLab host — auth/authz & CVEs", Severity.HIGH, ("authn", "bac"))),
+    (
+        "jenkins",
+        Rule("ci-host", "Jenkins/CI host — script console/CVEs", Severity.HIGH, ("authn",)),
+    ),
+    (
+        "gitlab",
+        Rule("git-host", "GitLab host — auth/authz & CVEs", Severity.HIGH, ("authn", "bac")),
+    ),
     ("git", Rule("git-host", "Git host — source/auth surface", Severity.MEDIUM, ("authn",))),
-    ("jira", Rule("atlassian-host", "Jira host — known SSRF/unauth CVEs", Severity.MEDIUM, ("ssrf", "bac"))),
-    ("confluence", Rule("atlassian-host", "Confluence host — known RCE/SSRF CVEs", Severity.MEDIUM, ("ssrf", "bac"))),
-    ("grafana", Rule("dashboard-host", "Grafana host — auth bypass CVEs", Severity.MEDIUM, ("authn",))),
-    ("kibana", Rule("dashboard-host", "Kibana host — often unauth data", Severity.HIGH, ("authn",))),
+    (
+        "jira",
+        Rule(
+            "atlassian-host", "Jira host — known SSRF/unauth CVEs", Severity.MEDIUM, ("ssrf", "bac")
+        ),
+    ),
+    (
+        "confluence",
+        Rule(
+            "atlassian-host",
+            "Confluence host — known RCE/SSRF CVEs",
+            Severity.MEDIUM,
+            ("ssrf", "bac"),
+        ),
+    ),
+    (
+        "grafana",
+        Rule("dashboard-host", "Grafana host — auth bypass CVEs", Severity.MEDIUM, ("authn",)),
+    ),
+    (
+        "kibana",
+        Rule("dashboard-host", "Kibana host — often unauth data", Severity.HIGH, ("authn",)),
+    ),
     ("pma", Rule("db-admin-host", "DB admin host (phpMyAdmin)", Severity.HIGH, ("authn", "sqli"))),
-    ("phpmyadmin", Rule("db-admin-host", "DB admin host (phpMyAdmin)", Severity.HIGH, ("authn", "sqli"))),
-    ("api", Rule("api-host", "API host — object-level authz surface", Severity.LOW, ("idor", "bac"))),
+    (
+        "phpmyadmin",
+        Rule("db-admin-host", "DB admin host (phpMyAdmin)", Severity.HIGH, ("authn", "sqli")),
+    ),
+    (
+        "api",
+        Rule("api-host", "API host — object-level authz surface", Severity.LOW, ("idor", "bac")),
+    ),
     ("gateway", Rule("api-host", "Gateway host — routing/authz surface", Severity.LOW, ("bac",))),
-    ("portal", Rule("portal-host", "Portal host — multi-role authz surface", Severity.LOW, ("authn", "bac"))),
+    (
+        "portal",
+        Rule(
+            "portal-host", "Portal host — multi-role authz surface", Severity.LOW, ("authn", "bac")
+        ),
+    ),
     ("mail", Rule("mail-host", "Mail host — webmail/auth surface", Severity.LOW, ("authn",))),
     ("webmail", Rule("mail-host", "Webmail host — auth surface", Severity.LOW, ("authn",))),
     ("ftp", Rule("ftp-host", "FTP host — plaintext/anon surface", Severity.MEDIUM)),
-    ("s3", Rule("storage-host", "Storage host — bucket ACL / takeover", Severity.LOW, ("subtakeover",))),
-    ("storage", Rule("storage-host", "Storage host — bucket ACL / takeover", Severity.LOW, ("subtakeover",))),
-    ("assets", Rule("storage-host", "Assets host — dangling-CNAME takeover", Severity.LOW, ("subtakeover",))),
-    ("cdn", Rule("storage-host", "CDN host — dangling-CNAME takeover", Severity.LOW, ("subtakeover",))),
-    ("static", Rule("storage-host", "Static host — dangling-CNAME takeover", Severity.LOW, ("subtakeover",))),
+    (
+        "s3",
+        Rule(
+            "storage-host", "Storage host — bucket ACL / takeover", Severity.LOW, ("subtakeover",)
+        ),
+    ),
+    (
+        "storage",
+        Rule(
+            "storage-host", "Storage host — bucket ACL / takeover", Severity.LOW, ("subtakeover",)
+        ),
+    ),
+    (
+        "assets",
+        Rule(
+            "storage-host", "Assets host — dangling-CNAME takeover", Severity.LOW, ("subtakeover",)
+        ),
+    ),
+    (
+        "cdn",
+        Rule("storage-host", "CDN host — dangling-CNAME takeover", Severity.LOW, ("subtakeover",)),
+    ),
+    (
+        "static",
+        Rule(
+            "storage-host", "Static host — dangling-CNAME takeover", Severity.LOW, ("subtakeover",)
+        ),
+    ),
 )
 
 _LABEL_MAP: dict[str, Rule] = {}
@@ -301,11 +671,18 @@ class _Acc:
     def signals(self) -> list[Signal]:
         out = []
         for (host, _id), (rule, category, evidence, count) in self._map.items():
-            out.append(Signal(
-                id=rule.id, title=rule.title, severity=rule.severity,
-                category=category, host=host, evidence=evidence,
-                playbooks=rule.playbooks, count=count,
-            ))
+            out.append(
+                Signal(
+                    id=rule.id,
+                    title=rule.title,
+                    severity=rule.severity,
+                    category=category,
+                    host=host,
+                    evidence=evidence,
+                    playbooks=rule.playbooks,
+                    count=count,
+                )
+            )
         return out
 
 

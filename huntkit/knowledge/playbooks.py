@@ -36,13 +36,13 @@ class Playbook:
 
     id: str
     title: str
-    severity: Severity                        # typical top-end impact
-    summary: str                              # one line: what the bug is
-    when: str                                 # when to reach for this playbook
-    detection: tuple[str, ...] = ()           # ordered how-to-find-it checklist
-    payloads: tuple[str, ...] = ()            # concrete probe strings
-    bypasses: tuple[str, ...] = ()            # filter / WAF bypass tricks
-    tools: tuple[str, ...] = ()               # go-to tools
+    severity: Severity  # typical top-end impact
+    summary: str  # one line: what the bug is
+    when: str  # when to reach for this playbook
+    detection: tuple[str, ...] = ()  # ordered how-to-find-it checklist
+    payloads: tuple[str, ...] = ()  # concrete probe strings
+    bypasses: tuple[str, ...] = ()  # filter / WAF bypass tricks
+    tools: tuple[str, ...] = ()  # go-to tools
     references: tuple[Reference, ...] = ()
 
     def to_dict(self) -> dict:
@@ -135,9 +135,13 @@ PLAYBOOKS: dict[str, Playbook] = {
         ),
         tools=("Burp Repeater", "Autorize", "arjun", "ffuf"),
         references=(
-            Reference("PortSwigger — IDOR", "https://portswigger.net/web-security/access-control/idor"),
-            Reference("OWASP API1:2023 BOLA",
-                      "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/"),
+            Reference(
+                "PortSwigger — IDOR", "https://portswigger.net/web-security/access-control/idor"
+            ),
+            Reference(
+                "OWASP API1:2023 BOLA",
+                "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/",
+            ),
         ),
     ),
     "bac": Playbook(
@@ -168,10 +172,14 @@ PLAYBOOKS: dict[str, Playbook] = {
         ),
         tools=("Burp Autorize", "ffuf", "nuclei"),
         references=(
-            Reference("PortSwigger — Access control",
-                      "https://portswigger.net/web-security/access-control"),
-            Reference("OWASP A01:2021 Broken Access Control",
-                      "https://owasp.org/Top10/A01_2021-Broken_Access_Control/"),
+            Reference(
+                "PortSwigger — Access control",
+                "https://portswigger.net/web-security/access-control",
+            ),
+            Reference(
+                "OWASP A01:2021 Broken Access Control",
+                "https://owasp.org/Top10/A01_2021-Broken_Access_Control/",
+            ),
         ),
     ),
     "xss": Playbook(
@@ -204,9 +212,13 @@ PLAYBOOKS: dict[str, Playbook] = {
         ),
         tools=("dalfox", "Burp", "kxss / gxss"),
         references=(
-            Reference("PortSwigger — XSS", "https://portswigger.net/web-security/cross-site-scripting"),
-            Reference("OWASP XSS Prevention Cheat Sheet",
-                      "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"),
+            Reference(
+                "PortSwigger — XSS", "https://portswigger.net/web-security/cross-site-scripting"
+            ),
+            Reference(
+                "OWASP XSS Prevention Cheat Sheet",
+                "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html",
+            ),
         ),
     ),
     "ssrf": Playbook(
@@ -239,8 +251,10 @@ PLAYBOOKS: dict[str, Playbook] = {
         tools=("interactsh / Burp Collaborator", "nuclei -tags ssrf", "ffuf"),
         references=(
             Reference("PortSwigger — SSRF", "https://portswigger.net/web-security/ssrf"),
-            Reference("OWASP SSRF Prevention Cheat Sheet",
-                      "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html"),
+            Reference(
+                "OWASP SSRF Prevention Cheat Sheet",
+                "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html",
+            ),
         ),
     ),
     "sqli": Playbook(
@@ -273,9 +287,13 @@ PLAYBOOKS: dict[str, Playbook] = {
         ),
         tools=("sqlmap (with --level/--risk tuned)", "Burp", "nuclei"),
         references=(
-            Reference("PortSwigger — SQL injection", "https://portswigger.net/web-security/sql-injection"),
-            Reference("OWASP SQLi Prevention Cheat Sheet",
-                      "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"),
+            Reference(
+                "PortSwigger — SQL injection", "https://portswigger.net/web-security/sql-injection"
+            ),
+            Reference(
+                "OWASP SQLi Prevention Cheat Sheet",
+                "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
+            ),
         ),
     ),
     "ssti": Playbook(
@@ -306,10 +324,14 @@ PLAYBOOKS: dict[str, Playbook] = {
         ),
         tools=("tplmap", "Burp", "nuclei -tags ssti,lfi"),
         references=(
-            Reference("PortSwigger — SSTI",
-                      "https://portswigger.net/web-security/server-side-template-injection"),
-            Reference("PayloadsAllTheThings — SSTI",
-                      "https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/Server%20Side%20Template%20Injection"),
+            Reference(
+                "PortSwigger — SSTI",
+                "https://portswigger.net/web-security/server-side-template-injection",
+            ),
+            Reference(
+                "PayloadsAllTheThings — SSTI",
+                "https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/Server%20Side%20Template%20Injection",
+            ),
         ),
     ),
     "subtakeover": Playbook(
@@ -335,10 +357,14 @@ PLAYBOOKS: dict[str, Playbook] = {
         bypasses=(),
         tools=("nuclei -tags takeover", "subjack", "dnsx", "subzy"),
         references=(
-            Reference("can-i-take-over-xyz (fingerprint list)",
-                      "https://github.com/EdOverflow/can-i-take-over-xyz"),
-            Reference("PortSwigger — subdomain takeover (research)",
-                      "https://portswigger.net/kb/issues/00600200_subdomain-takeover"),
+            Reference(
+                "can-i-take-over-xyz (fingerprint list)",
+                "https://github.com/EdOverflow/can-i-take-over-xyz",
+            ),
+            Reference(
+                "PortSwigger — subdomain takeover (research)",
+                "https://portswigger.net/kb/issues/00600200_subdomain-takeover",
+            ),
         ),
     ),
     "authn": Playbook(
@@ -368,8 +394,10 @@ PLAYBOOKS: dict[str, Playbook] = {
         ),
         tools=("Burp", "jwt_tool", "nuclei"),
         references=(
-            Reference("PortSwigger — Authentication",
-                      "https://portswigger.net/web-security/authentication"),
+            Reference(
+                "PortSwigger — Authentication",
+                "https://portswigger.net/web-security/authentication",
+            ),
             Reference("PortSwigger — JWT attacks", "https://portswigger.net/web-security/jwt"),
         ),
     ),
@@ -393,15 +421,17 @@ PLAYBOOKS: dict[str, Playbook] = {
             "Origin: https://evil-target.com     (prefix / substring-match bug)",
         ),
         bypasses=(
-            "Naive endsWith(\"target.com\") -> attacker registers not-target.com or target.com.evil.com.",
-            "Naive startsWith(\"https://target.com\") -> https://target.com.evil.com.",
+            'Naive endsWith("target.com") -> attacker registers not-target.com or target.com.evil.com.',
+            'Naive startsWith("https://target.com") -> https://target.com.evil.com.',
             "Trusted null origin reachable from a sandboxed iframe or a data: redirect.",
         ),
         tools=("curl", "nuclei -tags cors", "Burp"),
         references=(
             Reference("PortSwigger — CORS", "https://portswigger.net/web-security/cors"),
-            Reference("OWASP — Testing Cross Origin Resource Sharing",
-                      "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/11-Client-side_Testing/07-Testing_Cross_Origin_Resource_Sharing"),
+            Reference(
+                "OWASP — Testing Cross Origin Resource Sharing",
+                "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/11-Client-side_Testing/07-Testing_Cross_Origin_Resource_Sharing",
+            ),
         ),
     ),
 }

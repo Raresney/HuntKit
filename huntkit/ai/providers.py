@@ -30,7 +30,9 @@ def _post_json(url: str, headers: dict[str, str], payload: dict, timeout: int) -
     """
     body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
-        url, data=body, method="POST",
+        url,
+        data=body,
+        method="POST",
         headers={"content-type": "application/json", **headers},
     )
     try:
@@ -89,7 +91,8 @@ class OllamaProvider(Provider):
     def complete(self, system: str, prompt: str, *, model: str, config: Config) -> str:
         url = config.ai.endpoint.rstrip("/") + "/api/chat"
         data = _post_json(
-            url, {},
+            url,
+            {},
             {
                 "model": model,
                 "messages": [

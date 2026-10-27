@@ -33,9 +33,9 @@ class Report:
     program: str
     scope_in: list[str]
     scope_out: list[str]
-    recon: dict[str, int]          # stage -> asset count
+    recon: dict[str, int]  # stage -> asset count
     intel: IntelReport
-    playbooks: list[Playbook]      # referenced by attack paths, severity order
+    playbooks: list[Playbook]  # referenced by attack paths, severity order
     generated: float = field(default_factory=time.time)
 
     @property
@@ -62,7 +62,7 @@ def _referenced_playbooks(intel: IntelReport) -> list[Playbook]:
     """The playbooks the attack paths point at, most-severe first, de-duped."""
     out: list[Playbook] = []
     seen: set[str] = set()
-    for path in intel.attack_paths():          # already severity-ranked
+    for path in intel.attack_paths():  # already severity-ranked
         if path.playbook in seen:
             continue
         pb = get_playbook(path.playbook)

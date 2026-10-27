@@ -38,25 +38,25 @@ class Capability(str, Enum):
     -> findings) without any plugin knowing about the others.
     """
 
-    DOMAIN = "domain"        # a seed root domain (example.com)
+    DOMAIN = "domain"  # a seed root domain (example.com)
     SUBDOMAIN = "subdomain"  # a discovered name (api.example.com)
-    HOST = "host"            # a name that resolves / is probed live
-    URL = "url"              # a live http(s) endpoint
-    PORT = "port"            # an open host:port
-    PARAM = "param"          # a discovered request parameter
-    JS = "js"                # a javascript asset
-    FINDING = "finding"      # a vuln / signal worth a human's attention
+    HOST = "host"  # a name that resolves / is probed live
+    URL = "url"  # a live http(s) endpoint
+    PORT = "port"  # an open host:port
+    PARAM = "param"  # a discovered request parameter
+    JS = "js"  # a javascript asset
+    FINDING = "finding"  # a vuln / signal worth a human's attention
 
 
 class Category(str, Enum):
     """Coarse grouping for `doctor`, help output, and pipeline stages."""
 
     DISCOVERY = "discovery"  # find subdomains / assets
-    RESOLVE = "resolve"      # probe which are live + fingerprint
-    PORTS = "ports"          # port / service scanning
-    URLS = "urls"            # gather / crawl urls
-    SCAN = "scan"            # vuln / fuzz / param analysis
-    ENRICH = "enrich"        # metadata (asn, cdn, waf, favicon, ...)
+    RESOLVE = "resolve"  # probe which are live + fingerprint
+    PORTS = "ports"  # port / service scanning
+    URLS = "urls"  # gather / crawl urls
+    SCAN = "scan"  # vuln / fuzz / param analysis
+    ENRICH = "enrich"  # metadata (asn, cdn, waf, favicon, ...)
 
 
 class InputMode(str, Enum):
@@ -68,9 +68,9 @@ class InputMode(str, Enum):
     """
 
     TARGET = "target"  # a single seed placed by build_args (ctx.target)
-    STDIN = "stdin"    # ctx.inputs piped to the process stdin, newline-joined
-    ARGS = "args"      # ctx.inputs placed by build_args as argv
-    NONE = "none"      # takes no external target
+    STDIN = "stdin"  # ctx.inputs piped to the process stdin, newline-joined
+    ARGS = "args"  # ctx.inputs placed by build_args as argv
+    NONE = "none"  # takes no external target
 
 
 @dataclass
@@ -99,7 +99,7 @@ class PluginResult:
     items: list[str] = field(default_factory=list)
     raw: Optional[ProcResult] = None
     ok: bool = False
-    skipped: bool = False   # tool not installed / no input — not a failure
+    skipped: bool = False  # tool not installed / no input — not a failure
     reason: str = ""
 
     @property
@@ -119,11 +119,11 @@ class ToolPlugin(ABC):
     """
 
     # ---- metadata (override as class attributes) -------------------------
-    name: str = ""                       # registry key; usually the binary name
-    binary: str = ""                     # executable to resolve (defaults to name)
+    name: str = ""  # registry key; usually the binary name
+    binary: str = ""  # executable to resolve (defaults to name)
     category: Category = Category.DISCOVERY
     description: str = ""
-    install: str = ""                    # copy-pasteable install hint
+    install: str = ""  # copy-pasteable install hint
     consumes: Optional[Capability] = None
     produces: Capability = Capability.SUBDOMAIN
     input_mode: InputMode = InputMode.TARGET
@@ -184,19 +184,22 @@ class ToolPlugin(ABC):
         from ..core.runner import ToolNotFound
 
         if self.needs_api_key and not ctx.config.api_keys.get(self.needs_api_key):
-            return PluginResult(self.name, self.produces, skipped=True,
-                                reason=f"missing api key: {self.needs_api_key}")
+            return PluginResult(
+                self.name,
+                self.produces,
+                skipped=True,
+                reason=f"missing api key: {self.needs_api_key}",
+            )
         if not self.is_available(ctx.runner):
-            return PluginResult(self.name, self.produces, skipped=True,
-                                reason="not installed")
+            return PluginResult(self.name, self.produces, skipped=True, reason="not installed")
         if self.input_mode in (InputMode.STDIN, InputMode.ARGS) and not ctx.inputs:
-            return PluginResult(self.name, self.produces, skipped=True,
-                                reason="no input")
+            return PluginResult(self.name, self.produces, skipped=True, reason="no input")
 
         args = self.build_args(ctx)
         try:
             result = ctx.runner.run(
-                self.binary, args,
+                self.binary,
+                args,
                 stdin_data=self.stdin_payload(ctx),
                 cache_key=self.cache_key(ctx),
             )
@@ -206,7 +209,11 @@ class ToolPlugin(ABC):
         # Non-zero exit is common (empty source); still parse what came back.
         items = self.parse(result, ctx)
         return PluginResult(
-            self.name, self.produces, items=items, raw=result, ok=result.ok,
+            self.name,
+            self.produces,
+            items=items,
+            raw=result,
+            ok=result.ok,
         )
 
     def __repr__(self) -> str:  # pragma: no cover - cosmetic
