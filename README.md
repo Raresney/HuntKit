@@ -30,10 +30,10 @@ you explicitly approve.
   Adding a tool is dropping a file; the pipeline wires it in by capability.
 - **Active scanning** — `scan` drives the vuln/fuzz plugins (nuclei, dalfox, …)
   over the URLs recon gathered, **re-checked against scope**, writing findings
-  to the workspace's `scans/` dir.
-- **Intelligence engine** — turns recon output into scored, prioritised hosts and
-  **attack paths** (which bug class to run, and where), from a declarative signal
-  catalog. Pure and offline — it never touches the target.
+  to the workspace's `scans/` dir — where `analyze` folds them into host scoring.
+- **Intelligence engine** — turns recon output **and scan findings** into scored,
+  prioritised hosts and **attack paths** (which bug class to run, and where), from
+  a declarative signal catalog. Pure and offline — it never touches the target.
 - **Knowledge base** — full playbooks for 9 bug classes (detection, payloads,
   bypasses, tools, references), cross-linked from the attack paths.
 - **Reporting** — one model rendered to Markdown, a self-contained HTML page, or
@@ -119,12 +119,11 @@ Bug classes: `idor`, `bac`, `xss`, `ssrf`, `sqli`, `ssti`, `subtakeover`,
 ## How it fits together
 
 ```
-recon  ──▶  scan                         (active: nuclei/dalfox → scans/)
-(tools)       │
-  └──▶  intel.analyze  ──▶  report  ──▶  advise
-        (signals→score     (md/html/json)  (LLM, gated)
-         →attack paths)          │
-               └──────▶ knowledge playbooks (huntkit playbook <id>)
+recon  ──▶  scan  ──▶  intel.analyze  ──▶  report  ──▶  advise
+(tools)    (nuclei/    (scores recon +     (md/html/json)  (LLM, gated)
+            dalfox)     scan findings →          │
+                        attack paths)            │
+                              └──────▶ knowledge playbooks (huntkit playbook <id>)
 
 secrets / fingerprint — standalone scanners over content you've gathered
 ```
