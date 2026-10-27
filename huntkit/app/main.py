@@ -30,6 +30,7 @@ from ..report import build as report_build
 from ..report import write as report_write
 from ..scanner import ScanSummary, run_scan
 from ..secrets import endpoints_from_paths, scan_paths
+from ..shots import ShotSummary, run_shots
 from ..utils import filesystem as fs
 from ..utils import terminal as term
 from ..utils import validators as v
@@ -834,6 +835,51 @@ def _print_enrich(report: EnrichReport, ws: Workspace, out: Optional[Path]) -> N
     if out:
         fs.write_text(out, Path(ws.path("scans", "enrich.json")).read_text(encoding="utf-8"))
         term.ok(f"wrote {out}")
+
+
+# --------------------------------------------------------------------------
+# shots (screenshots)
+# --------------------------------------------------------------------------
+def _render_shots_event(event: dict) -> None:
+    kind = event.get("event")
+    if kind == "shots_start":
+        term.step(f"capturing {event['targets']} URL(s) with gowitness")
+    elif kind == "shots_done":
+        term.bullet(f"captured {event['captured']} screenshot(s)", "ok")
+    elif kind == "shots_error":
+        term.bullet(f"capture failed: {event['reason']}", "muted")
+
+
+@app.command()
+def shots(
+    ctx: typer.Context,
+    program: Optional[str] = typer.Option(
+        None, "--program", "-p", help="Workspace to screenshot (default: the only one)."
+    ),
+) -> None:
+    """Screenshot every live in-scope URL (gowitness) for the report gallery."""
+    app_ctx = ctx.obj
+    program = program or _pick_program(app_ctx, default="")
+    if not program:
+        term.error("which workspace? pass -p <program> (none, or several, found).")
+        raise typer.Exit(2)
+
+    ws = Workspace.open(program, config=app_ctx.config, base=app_ctx.base)
+    term.banner(f"shots — {program}")
+    summary = run_shots(ws, app_ctx.config, runner=app_ctx.runner, on_event=_render_shots_event)
+    _print_shots_summary(summary, ws)
+
+
+def _print_shots_summary(summary: ShotSummary, ws: Workspace) -> None:
+    if summary.targets == 0:
+        term.warn(f"no in-scope URLs to screenshot for '{summary.program}'.")
+        term.info(f"gather some first:  huntkit recon <domain> -p {summary.program}")
+        raise typer.Exit(0)
+    if summary.captured == 0:
+        term.warn("no screenshots captured — is gowitness installed?  huntkit doctor")
+        raise typer.Exit(0)
+    term.ok(f"{summary.captured}/{summary.targets} captured under {ws.path('reports', 'shots')}.")
+    term.info(f"embed them in a gallery:  huntkit report -p {summary.program} -f html")
 
 
 # --------------------------------------------------------------------------

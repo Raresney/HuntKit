@@ -115,7 +115,15 @@ class TestHtml:
 class TestJson:
     def test_shape(self, tmp_path):
         d = json.loads(render.to_json(build(_seed(tmp_path))))
-        assert set(d) == {"program", "generated", "scope", "recon", "intel", "playbooks"}
+        assert set(d) == {
+            "program",
+            "generated",
+            "scope",
+            "recon",
+            "intel",
+            "playbooks",
+            "screenshots",
+        }
         assert d["scope"]["in"] == ["*.example.com"]
         assert d["intel"]["hosts"] and d["recon"]["ports"] == 2
         assert d["playbooks"] and "id" in d["playbooks"][0]

@@ -11,6 +11,8 @@ Pure and offline — it only reads artifacts already on disk.
 
 from __future__ import annotations
 
+import base64
+import json
 import time
 from dataclasses import dataclass, field
 
@@ -27,6 +29,26 @@ _RECON_FILES: tuple[tuple[str, str], ...] = (
     ("urls", "urls/urls.txt"),
 )
 
+_SHOTS_MANIFEST = "scans/screenshots.json"
+_MIME = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
+
+
+@dataclass
+class Screenshot:
+    """One captured URL and, for the HTML renderer, its inlined image.
+
+    ``data_uri`` is populated by the builder (which can read the file) so the
+    HTML report stays a single self-contained page; it is deliberately left
+    out of :meth:`to_dict` so JSON/Markdown reference the file by path.
+    """
+
+    url: str
+    file: str  # relative to the workspace root
+    data_uri: str = ""
+
+    def to_dict(self) -> dict:
+        return {"url": self.url, "file": self.file}
+
 
 @dataclass
 class Report:
@@ -36,6 +58,7 @@ class Report:
     recon: dict[str, int]  # stage -> asset count
     intel: IntelReport
     playbooks: list[Playbook]  # referenced by attack paths, severity order
+    screenshots: list[Screenshot] = field(default_factory=list)
     generated: float = field(default_factory=time.time)
 
     @property
@@ -55,6 +78,7 @@ class Report:
             "recon": self.recon,
             "intel": self.intel.to_dict(),
             "playbooks": [p.to_dict() for p in self.playbooks],
+            "screenshots": [s.to_dict() for s in self.screenshots],
         }
 
 
@@ -72,6 +96,40 @@ def _referenced_playbooks(intel: IntelReport) -> list[Playbook]:
     return out
 
 
+def _load_screenshots(ws: Workspace) -> list[Screenshot]:
+    """Read the screenshot manifest and inline each image for the HTML report.
+
+    Missing or malformed manifests yield no screenshots; an image file that
+    has gone missing is dropped rather than erroring the whole report.
+    """
+    manifest = ws.path(_SHOTS_MANIFEST)
+    if not manifest.exists():
+        return []
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        entries = data.get("shots", [])
+    except (ValueError, OSError):
+        return []
+
+    out: list[Screenshot] = []
+    for entry in entries:
+        rel = entry.get("file", "")
+        url = entry.get("url", "")
+        if not rel or not url:
+            continue
+        shot = Screenshot(url=url, file=rel)
+        img = ws.path(rel)
+        mime = _MIME.get(img.suffix.lower())
+        if mime and img.exists():
+            try:
+                raw = base64.b64encode(img.read_bytes()).decode("ascii")
+                shot.data_uri = f"data:{mime};base64,{raw}"
+            except OSError:
+                pass
+        out.append(shot)
+    return out
+
+
 def build(ws: Workspace) -> Report:
     """Score the workspace and gather everything a report needs."""
     intel = analyze(ws)
@@ -83,4 +141,5 @@ def build(ws: Workspace) -> Report:
         recon=recon,
         intel=intel,
         playbooks=_referenced_playbooks(intel),
+        screenshots=_load_screenshots(ws),
     )
