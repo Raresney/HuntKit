@@ -76,6 +76,15 @@ The external tools are the usual bug-bounty stack. `doctor` shows what you have;
 anything missing is reported with its install hint and that stage is simply
 skipped, so HuntKit is useful even on a fresh box.
 
+On a Debian-family box (Kali / Ubuntu), the whole toolchain plus HuntKit itself
+installs in one shot:
+
+```bash
+bash scripts/install-tools.sh    # apt + go install + arjun, then huntkit in a venv
+```
+
+The tools are Linux-native — a Kali VM (or WSL) is the intended runtime.
+
 ---
 
 ## Quick start
