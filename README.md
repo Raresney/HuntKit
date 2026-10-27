@@ -3,7 +3,8 @@
 [![CI](https://github.com/Raresney/HuntKit/actions/workflows/ci.yml/badge.svg)](https://github.com/Raresney/HuntKit/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-blue)
-![Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen)
+![Release](https://img.shields.io/badge/release-v0.2.0-blue)
 
 **Local-first bug-bounty recon, methodology & workflow framework for _authorised_ testing.**
 
@@ -217,7 +218,7 @@ pip install -e ".[dev]"
 ruff check huntkit tests     # lint
 ruff format huntkit tests    # format (CI checks with --check)
 mypy huntkit                 # type-check
-pytest --cov=huntkit         # tests (93% coverage, gate at 90%)
+pytest --cov=huntkit         # tests (92% coverage, gate at 90%)
 ```
 
 CI runs lint, format-check, type-check and tests on Python 3.10–3.13.
@@ -229,6 +230,12 @@ CI runs lint, format-check, type-check and tests on Python 3.10–3.13.
 HuntKit's AI advisor (`feat(ai): multi-provider advisor with cloud-approval gate`)
 was selected for the [XERJ Corpus Hub](https://hub.xerj.org) as a reference
 implementation, under this repository's MIT license with attribution.
+
+---
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md). Current release: **v0.2.0**.
 
 ---
 
