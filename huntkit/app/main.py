@@ -32,6 +32,7 @@ from ..report import write as report_write
 from ..scanner import ScanSummary, run_scan
 from ..secrets import endpoints_from_paths, scan_paths
 from ..shots import ShotSummary, run_shots
+from ..tui import render_dashboard
 from ..utils import filesystem as fs
 from ..utils import terminal as term
 from ..utils import validators as v
@@ -971,6 +972,48 @@ def _print_diff(report: DiffReport, top: int) -> None:
             term.bullet(f"+ {escape(item)}", "ok")
         for item in c.removed[:top]:
             term.bullet(f"- {escape(item)}", "muted")
+
+
+# --------------------------------------------------------------------------
+# dashboard (TUI)
+# --------------------------------------------------------------------------
+@app.command()
+def dashboard(
+    ctx: typer.Context,
+    program: Optional[str] = typer.Option(
+        None, "--program", "-p", help="Workspace to show (default: the only one)."
+    ),
+    top: int = typer.Option(10, "--top", "-n", help="Rows per table."),
+    watch: Optional[float] = typer.Option(
+        None, "--watch", "-W", help="Redraw every N seconds (Ctrl-C to stop)."
+    ),
+) -> None:
+    """Paint a one-screen engagement dashboard (optionally live with --watch)."""
+    app_ctx = ctx.obj
+    program = program or _pick_program(app_ctx, default="")
+    if not program:
+        term.error("which workspace? pass -p <program> (none, or several, found).")
+        raise typer.Exit(2)
+    ws = Workspace.open(program, config=app_ctx.config, base=app_ctx.base)
+
+    if watch and watch > 0:
+        _watch_dashboard(ws, top, watch)
+        return
+    term.console.print(render_dashboard(ws, top=top))
+
+
+def _watch_dashboard(ws: Workspace, top: int, interval: float) -> None:  # pragma: no cover
+    import time
+
+    from rich.live import Live
+
+    try:
+        with Live(render_dashboard(ws, top=top), console=term.console, screen=True) as live:
+            while True:
+                time.sleep(interval)
+                live.update(render_dashboard(ws, top=top))
+    except KeyboardInterrupt:
+        term.info("stopped.")
 
 
 # --------------------------------------------------------------------------
