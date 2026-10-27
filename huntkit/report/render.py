@@ -99,6 +99,11 @@ def to_markdown(report: Report) -> str:
             [(s.severity.label, s.host, s.title, s.evidence) for s in hot],
         )
 
+    if report.screenshots:
+        out += ["## Screenshots", ""]
+        out += [f"- [{s.url}]({s.file})" for s in report.screenshots]
+        out += [""]
+
     out += ["## Recon surface", ""]
     out += _md_table(["Stage", "Count"], [(label, str(n)) for label, n in report.recon.items()])
 
@@ -159,6 +164,10 @@ li { margin:.15rem 0; }
 .sev-low { background:#dcfce7; color:#166534; }
 .sev-informational { background:#e0f2fe; color:#075985; }
 .pb { border:1px solid var(--line); border-radius:12px; padding:4px 20px 16px; margin:1rem 0; }
+.gallery { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; margin:.6rem 0 1rem; }
+.gallery figure { margin:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.gallery img { display:block; width:100%; height:160px; object-fit:cover; object-position:top; background:#f3f4f6; }
+.gallery figcaption { padding:7px 10px; font-size:.78rem; color:var(--muted); word-break:break-all; border-top:1px solid var(--line); }
 footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); color:var(--muted); font-size:.85rem; }
 @media (prefers-color-scheme: dark) {
   :root { --bg:#0b1220; --fg:#e5e7eb; --muted:#9ca3af; --line:#1f2937; --accent:#5eead4; }
@@ -288,6 +297,16 @@ def to_html(report: Report) -> str:
                 [(_chip(s.severity), esc(s.host), esc(s.title), esc(s.evidence)) for s in hot],
             )
         )
+
+    shots = [s for s in report.screenshots if s.data_uri]
+    if shots:
+        h.append("<h2>Screenshots</h2><div class='gallery'>")
+        for s in shots:
+            h.append(
+                f"<figure><img loading='lazy' src='{s.data_uri}' alt='{esc(s.url)}'>"
+                f"<figcaption>{esc(s.url)}</figcaption></figure>"
+            )
+        h.append("</div>")
 
     h.append("<h2>Recon surface</h2>")
     h.append(

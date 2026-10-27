@@ -18,7 +18,7 @@ from ..core.workspace import Workspace
 from ..utils import filesystem as fs
 from ..utils.validators import sanitize_filename
 from . import render
-from .builder import Report, build
+from .builder import Report, Screenshot, build
 
 # Canonical output formats.
 FORMATS = ("md", "html", "json", "pdf")
@@ -93,6 +93,7 @@ def generate(ws: Workspace, fmt: str = "md", out: Path | None = None) -> Written
 __all__ = [
     "FORMATS",
     "Report",
+    "Screenshot",
     "Written",
     "build",
     "generate",
