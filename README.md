@@ -43,6 +43,9 @@ you explicitly approve.
   shows exactly what will be sent**.
 - **Content scanners** — a redacting secret & JS-endpoint scanner, and a
   header-based CDN/WAF/cloud/tech fingerprinter.
+- **Asset-correlation enrichment** — `enrich` hashes each origin's favicon
+  (the Shodan `http.favicon.hash:` pivot) and maps every host to its ASN /
+  BGP prefix, turning one asset into the rest of the estate to sweep.
 
 ---
 
@@ -77,16 +80,19 @@ python -m huntkit recon acme.com -p acme
 # 3. actively scan the gathered URLs (nuclei, dalfox, …)
 python -m huntkit scan -p acme
 
-# 4. score the surface into prioritised hosts + attack paths
+# 4. enrich: favicon hashes (Shodan pivot) + ASN/BGP origins
+python -m huntkit enrich -p acme
+
+# 5. score the surface into prioritised hosts + attack paths
 python -m huntkit analyze -p acme
 
-# 5. pull a full playbook for a bug class the analysis points at
+# 6. pull a full playbook for a bug class the analysis points at
 python -m huntkit playbook ssrf
 
-# 6. write a shareable report
+# 7. write a shareable report
 python -m huntkit report -p acme -f html
 
-# 7. (optional) ask a local LLM to prioritise it
+# 8. (optional) ask a local LLM to prioritise it
 python -m huntkit advise -p acme --provider ollama
 ```
 
@@ -102,6 +108,7 @@ With a single workspace, `-p` is inferred.
 | `init <program> -s <scope>` | Create a workspace and set in/out scope (`*.wildcards` ok). |
 | `recon <domain> [--stage] [--threads] [--fresh] [--no-cache]` | Parallel, resumable recon pipeline. |
 | `scan -p <program> [--tool] [--threads] [--no-cache]` | Run the vuln/fuzz scanners (nuclei, dalfox) over the gathered in-scope URLs. |
+| `enrich -p <program> [--favicon/--no-favicon] [--asn/--no-asn]` | Favicon hashes (Shodan pivot) + ASN/BGP origin per host. |
 | `analyze -p <program>` | Score hosts Low→Critical and roll signals into attack paths. |
 | `playbook [<id>] [--md]` | List the bug-class knowledge base, or render one playbook. |
 | `report -p <program> [-f md\|html\|json\|pdf]` | Write an engagement report. |
@@ -125,6 +132,7 @@ recon  ──▶  scan  ──▶  intel.analyze  ──▶  report  ──▶  
                         attack paths)            │
                               └──────▶ knowledge playbooks (huntkit playbook <id>)
 
+enrich — favicon hashes + ASN/BGP origins over the recon surface (pivot outward)
 secrets / fingerprint — standalone scanners over content you've gathered
 ```
 
@@ -145,6 +153,10 @@ on a small `core` (config, workspace, state, runner) and `utils`.
   provider is sent nothing unless you confirm, after being shown the exact text
   and the destination host — and that check is enforced in the advisor layer,
   not just the CLI.
+- **Enrichment egress is named** — `enrich` fetches favicons from in-scope
+  targets (scheme-guarded to http/https), and its ASN lookup sends a resolved
+  in-scope IP to Team Cymru's public WHOIS — the one call to a non-target host,
+  called out in the CLI before it runs.
 - **Engagement data is gitignored** — never commit a workspace.
 
 ---
@@ -170,7 +182,7 @@ The framework is built around declarative catalogs:
 ├── scope/     in/out scope lists
 ├── recon/     subdomains.txt, resolved.txt, live.txt, ports.txt
 ├── urls/      urls.txt
-├── scans/     intel.json, secrets.json, nuclei output …
+├── scans/     intel.json, findings.json, enrich.json, nuclei output …
 ├── notes/     your own notes
 ├── reports/   generated md / html / json
 └── state.json stage tracking + counts
