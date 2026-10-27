@@ -185,11 +185,12 @@ Override the base dir with `-w <dir>` or `$HUNTKIT_HOME`.
 ```bash
 pip install -e ".[dev]"
 ruff check huntkit tests     # lint
+ruff format huntkit tests    # format (CI checks with --check)
 mypy huntkit                 # type-check
 pytest --cov=huntkit         # tests (93% coverage, gate at 90%)
 ```
 
-CI runs all three on Python 3.10–3.13.
+CI runs lint, format-check, type-check and tests on Python 3.10–3.13.
 
 ---
 

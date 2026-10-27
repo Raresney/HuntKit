@@ -37,6 +37,9 @@ jobs:
       - name: Lint (ruff)
         run: ruff check huntkit tests
 
+      - name: Format check (ruff)
+        run: ruff format --check huntkit tests
+
       - name: Type-check (mypy)
         run: mypy huntkit
 
