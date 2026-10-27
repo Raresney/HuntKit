@@ -2,8 +2,8 @@
 
 Defines the root command group, its global options, and the top-level
 commands. Grouped commands (config/plugins/workspace) live in their own
-modules and are mounted here. Run it with ``python -m huntkit`` or, once the
-new interface reaches parity, the ``huntkit`` console script.
+modules and are mounted here. Run it with the ``huntkit`` console script or
+``python -m huntkit`` — both resolve to :func:`run`.
 """
 
 from __future__ import annotations
@@ -27,6 +27,7 @@ from ..pipeline import RECON_STAGES, ReconSummary, run_recon
 from ..report import FORMATS, normalise_format
 from ..report import build as report_build
 from ..report import write as report_write
+from ..scanner import ScanSummary, run_scan
 from ..secrets import endpoints_from_paths, scan_paths
 from ..utils import filesystem as fs
 from ..utils import terminal as term
@@ -249,6 +250,74 @@ def _print_summary(summary: ReconSummary, ws: Workspace) -> None:
         rows.append((s.stage, str(s.new), str(s.total), tools))
     term.print_table("Recon summary", ["stage", "new", "total", "tools"], rows)
     term.ok(f"{summary.total_new} new assets. Files under {ws.root}")
+
+
+# --------------------------------------------------------------------------
+# scan
+# --------------------------------------------------------------------------
+def _render_scan_event(event: dict) -> None:
+    kind = event.get("event")
+    if kind == "scan_start":
+        tools = ", ".join(event["tools"]) or "none installed"
+        term.step(f"scanning {event['targets']} target(s) with: {tools}")
+    elif kind == "plugin_done":
+        term.bullet(f"{event['plugin']}: {event['found']} finding(s)", "ok")
+    elif kind == "plugin_skip":
+        term.bullet(f"{event['plugin']}: skipped ({event['reason']})", "muted")
+
+
+@app.command()
+def scan(
+    ctx: typer.Context,
+    program: Optional[str] = typer.Option(
+        None, "--program", "-p", help="Workspace to scan (default: the only one)."
+    ),
+    tool: Optional[list[str]] = typer.Option(
+        None, "--tool", "-T", help="Restrict to these scanners (repeatable; default: all available)."
+    ),
+    threads: Optional[int] = typer.Option(
+        None, "--threads", "-t", help="Concurrency (default: config general.threads)."
+    ),
+    no_cache: bool = typer.Option(
+        False, "--no-cache", help="Bypass the tool-output cache for this run."
+    ),
+) -> None:
+    """Run the vuln/fuzz scanners (nuclei, dalfox, …) over the gathered URLs."""
+    app_ctx = ctx.obj
+    program = program or _pick_program(app_ctx, default="")
+    if not program:
+        term.error("which workspace? pass -p <program> (none, or several, found).")
+        raise typer.Exit(2)
+
+    ws = Workspace.open(program, config=app_ctx.config, base=app_ctx.base)
+    term.banner(f"scan — {program}")
+    summary = run_scan(
+        ws, app_ctx.config, tools=tool,
+        runner=app_ctx.runner, registry=app_ctx.registry,
+        on_event=_render_scan_event, threads=threads, use_cache=not no_cache,
+    )
+
+    if summary.targets == 0:
+        term.warn(f"no in-scope URLs to scan for '{program}'.")
+        term.info(f"gather some first:  huntkit recon <domain> -p {program}  (the live & urls stages)")
+        raise typer.Exit(0)
+
+    if not summary.ran:
+        term.warn("no scanner ran — install one (e.g. nuclei) to enable this phase.")
+        term.info("see what's available:  huntkit doctor")
+        raise typer.Exit(0)
+
+    _print_scan_summary(summary, ws)
+
+
+def _print_scan_summary(summary: ScanSummary, ws: Workspace) -> None:
+    rows = []
+    for o in summary.outcomes:
+        status = f"{o.count} finding(s)" if o.ran else f"[muted]skipped: {o.reason}[/muted]"
+        rows.append((o.tool, status))
+    term.print_table("Scan summary", ["scanner", "result"], rows)
+    term.ok(f"{summary.total_findings} finding(s) across {summary.targets} target(s). "
+            f"Details under {ws.path('scans')}")
 
 
 # --------------------------------------------------------------------------
