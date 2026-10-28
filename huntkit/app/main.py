@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import sys
+import urllib.parse
 from pathlib import Path
 from typing import Optional
 
@@ -25,6 +26,7 @@ from ..history import DiffReport, capture, current_vs, find, latest, list_snapsh
 from ..intel import IntelReport, Priority, save_report
 from ..intel import analyze as run_analyze
 from ..knowledge import Playbook, all_playbooks, get_playbook
+from ..monitor import NOTIFY_CHANGES, NOTIFY_FINDINGS, MonitorResult, run_monitor
 from ..pipeline import RECON_STAGES, ReconSummary, run_recon
 from ..report import FORMATS, normalise_format
 from ..report import build as report_build
@@ -1012,6 +1014,119 @@ def _watch_dashboard(ws: Workspace, top: int, interval: float) -> None:  # pragm
             while True:
                 time.sleep(interval)
                 live.update(render_dashboard(ws, top=top))
+    except KeyboardInterrupt:
+        term.info("stopped.")
+
+
+# --------------------------------------------------------------------------
+# monitor (continuous re-sweep + webhook)
+# --------------------------------------------------------------------------
+def _render_monitor_event(event: dict) -> None:
+    kind = event.get("event")
+    if kind == "monitor_start":
+        base = event.get("baseline") or "none"
+        term.step(f"monitor {event['program']}  (baseline: {base})")
+    elif kind == "recon_begin":
+        term.bullet("re-running recon…", "muted")
+    elif kind == "notify":
+        host = urllib.parse.urlsplit(event["webhook"]).hostname or "?"
+        term.warn(f"egress: sending the delta to webhook host '{host}'")
+
+
+@app.command()
+def monitor(
+    ctx: typer.Context,
+    domain: str = typer.Argument(..., help="Seed domain to re-sweep."),
+    program: Optional[str] = typer.Option(
+        None, "--program", "-p", help="Workspace to use (default: the domain)."
+    ),
+    webhook: Optional[str] = typer.Option(
+        None,
+        "--webhook",
+        "-u",
+        help="Slack/Discord incoming webhook; receives the delta (opt-in egress).",
+    ),
+    notify_on: str = typer.Option(
+        NOTIFY_FINDINGS, "--notify-on", help="findings | changes — what fires the webhook."
+    ),
+    interval: Optional[float] = typer.Option(
+        None, "--interval", "-i", help="Re-sweep every N minutes (Ctrl-C to stop)."
+    ),
+) -> None:
+    """Re-sweep a program, diff against the last snapshot, notify on new findings."""
+    app_ctx = ctx.obj
+    try:
+        domain = v.normalise_domain(domain)
+    except v.ValidationError:
+        term.error(f"not a valid domain: {domain}")
+        raise typer.Exit(2) from None
+
+    if notify_on not in (NOTIFY_FINDINGS, NOTIFY_CHANGES):
+        term.error(f"--notify-on must be '{NOTIFY_FINDINGS}' or '{NOTIFY_CHANGES}'.")
+        raise typer.Exit(2)
+
+    program = program or _pick_program(app_ctx, default=domain)
+    ws = Workspace.open(program, config=app_ctx.config, base=app_ctx.base)
+
+    # monitor re-runs recon, so honour scope exactly as `recon` does.
+    if ws.has_scope():
+        if not ws.in_scope(domain):
+            term.error(f"{domain} is out of scope for '{program}'.")
+            term.info(f"add it:  huntkit init {program} -s {domain}")
+            raise typer.Exit(2)
+    else:
+        ws.set_scope([f"*.{domain}"], [])
+        term.warn(f"no scope set — limiting to *.{domain}. Refine with `huntkit init`.")
+
+    def _recon() -> ReconSummary:
+        return run_recon(
+            ws,
+            app_ctx.config,
+            domain,
+            runner=app_ctx.runner,
+            registry=app_ctx.registry,
+            on_event=_render_event,
+        )
+
+    def _sweep() -> MonitorResult:
+        return run_monitor(
+            ws,
+            app_ctx.config,
+            domain,
+            webhook=webhook,
+            notify_on=notify_on,
+            recon=_recon,
+            on_event=_render_monitor_event,
+        )
+
+    if interval and interval > 0:
+        _watch_monitor(_sweep, interval)
+        return
+    term.banner(f"monitor {domain}  ->  {program}")
+    _print_monitor(_sweep())
+
+
+def _print_monitor(result: MonitorResult) -> None:
+    if result.first_run or result.report is None:
+        term.ok(
+            f"first run — saved baseline '{result.snapshot.id}'. Re-run later to see the delta."
+        )
+        return
+    _print_diff(result.report, top=25)
+    if result.notified:
+        term.ok("webhook notified.")
+    elif result.report.has_changes:
+        term.info("changes found; no webhook set (pass --webhook to get pinged).")
+
+
+def _watch_monitor(sweep, interval_minutes: float) -> None:  # pragma: no cover
+    import time
+
+    try:
+        while True:
+            _print_monitor(sweep())
+            term.info(f"next sweep in {interval_minutes} min (Ctrl-C to stop)…")
+            time.sleep(interval_minutes * 60)
     except KeyboardInterrupt:
         term.info("stopped.")
 
