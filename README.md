@@ -85,6 +85,24 @@ bash scripts/install-tools.sh    # apt + go install + arjun, then huntkit in a v
 
 The tools are Linux-native — a Kali VM (or WSL) is the intended runtime.
 
+### Docker — the whole toolchain, baked
+
+No Linux box to set up? The image carries HuntKit **and** every external tool,
+so it runs anywhere Docker does:
+
+```bash
+docker build -t huntkit .
+docker run --rm huntkit doctor
+
+# a real run — mount a dir to keep workspaces, add caps for naabu's SYN scan
+docker run --rm -v "$PWD/hk-data:/data" \
+    --cap-add=NET_ADMIN --cap-add=NET_RAW \
+    huntkit recon acme.com -p acme
+```
+
+Engagement data lives in the `/data` volume (`HUNTKIT_HOME`); mount a host
+directory to keep it between runs. The image never bakes in a workspace.
+
 ---
 
 ## Quick start
