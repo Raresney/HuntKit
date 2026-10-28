@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ..core.pacing import Pace, rate_arg
 from .base import Capability, Category, InputMode, PluginContext, ToolPlugin
 
 
@@ -15,5 +16,7 @@ class Naabu(ToolPlugin):
     input_mode = InputMode.STDIN
 
     def build_args(self, ctx: PluginContext) -> list[str]:
-        # hosts arrive via stdin; emit host:port on stdout
-        return ["-silent", "-no-color", "-rate", str(ctx.config.general.rate)]
+        # hosts arrive via stdin; emit host:port on stdout. port_rate is a
+        # packet budget, a different knob from the HTTP request rate.
+        pace = Pace.from_config(ctx.config)
+        return ["-silent", "-no-color", *rate_arg("-rate", pace.port_rate)]

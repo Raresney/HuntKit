@@ -98,7 +98,8 @@ class TestDiscovery:
 class TestBuildArgs:
     def test_target_mode_places_seed(self):
         reg = discover()
-        assert reg.get("subfinder").build_args(_ctx(target="x.com")) == ["-silent", "-d", "x.com"]
+        sub = reg.get("subfinder").build_args(_ctx(target="x.com"))
+        assert sub[:3] == ["-silent", "-d", "x.com"]
         assert reg.get("assetfinder").build_args(_ctx(target="x.com")) == ["--subs-only", "x.com"]
 
     def test_stdin_mode_flags_only(self):
@@ -120,6 +121,57 @@ class TestBuildArgs:
         args = discover().get("ffuf").build_args(_ctx(target="https://x.com", wordlist="/wl"))
         assert "https://x.com/FUZZ" in args
         assert "/wl" in args
+
+
+class TestPacingPropagation:
+    """One config policy reaches every rate-aware tool's native flags."""
+
+    def _cfg(self, rate=40, delay=0.5, port_rate=500, threads=8):
+        cfg = Config()
+        cfg.http.rate_limit = rate
+        cfg.http.delay = delay
+        cfg.general.rate = port_rate
+        cfg.general.threads = threads
+        return cfg
+
+    def _args(self, name, cfg, **ctx):
+        return discover().get(name).build_args(_ctx(cfg=cfg, **ctx))
+
+    def test_projectdiscovery_tools_get_rate_limit(self):
+        cfg = self._cfg(rate=40)
+        for name, kw in [
+            ("subfinder", {"target": "x.com"}),
+            ("httpx", {"inputs": ["a.x.com"]}),
+            ("nuclei", {}),
+            ("dnsx", {"inputs": ["a.x.com"]}),
+            ("katana", {"inputs": ["https://x.com"]}),
+        ]:
+            args = self._args(name, cfg, **kw)
+            assert "-rate-limit" in args and "40" in args, name
+
+    def test_naabu_uses_port_rate(self):
+        args = self._args("naabu", self._cfg(port_rate=500), inputs=["x.com"])
+        assert args[args.index("-rate") + 1] == "500"
+
+    def test_httpx_delay_as_duration(self):
+        args = self._args("httpx", self._cfg(delay=0.5), inputs=["a.x.com"])
+        assert args[args.index("-delay") + 1] == "500ms"
+
+    def test_ffuf_rate_and_delay(self):
+        args = self._args("ffuf", self._cfg(rate=40, delay=1.5), target="https://x.com")
+        assert args[args.index("-rate") + 1] == "40"
+        assert args[args.index("-p") + 1] == "1.5"
+
+    def test_dalfox_worker_and_delay_ms(self):
+        args = self._args("dalfox", self._cfg(delay=0.3, threads=8), inputs=["https://x.com/?q=1"])
+        assert args[args.index("--worker") + 1] == "8"
+        assert args[args.index("--delay") + 1] == "300"
+
+    def test_zero_rate_emits_no_flag(self):
+        cfg = self._cfg(rate=0, delay=0)
+        args = self._args("httpx", cfg, inputs=["a.x.com"])
+        assert "-rate-limit" not in args
+        assert "-delay" not in args
 
 
 class TestParse:

@@ -7,6 +7,7 @@ package of the same name ships a different ``httpx`` CLI; pin
 
 from __future__ import annotations
 
+from ..core.pacing import Pace, delay_arg, rate_arg
 from .base import Capability, Category, InputMode, PluginContext, ToolPlugin
 
 
@@ -20,9 +21,10 @@ class Httpx(ToolPlugin):
     input_mode = InputMode.STDIN
 
     def build_args(self, ctx: PluginContext) -> list[str]:
+        pace = Pace.from_config(ctx.config)
         args = ["-silent", "-no-color", "-t", str(ctx.config.general.threads)]
-        if ctx.config.http.rate_limit:
-            args += ["-rate-limit", str(ctx.config.http.rate_limit)]
+        args += rate_arg("-rate-limit", pace.rate)
+        args += delay_arg("-delay", pace.delay)
         if ctx.config.http.follow_redirects:
             args.append("-follow-redirects")
         return args
