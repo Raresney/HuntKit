@@ -56,6 +56,10 @@ you explicitly approve.
 - **Live dashboard** — `dashboard` paints the whole engagement on one screen
   (priority, recon surface, top hosts, attack paths, notable exposures,
   enrichment) and `--watch` redraws it live. Built on Rich — no extra deps.
+- **Continuous monitoring** — `monitor` re-sweeps a program, diffs the result
+  set against the last snapshot, and pings a Slack/Discord webhook the moment a
+  **new finding** turns up. `--interval N` loops every N minutes — a program
+  watches itself while you sleep.
 
 ---
 
@@ -134,6 +138,10 @@ python -m huntkit report -p acme -f html
 
 # 9. (optional) ask a local LLM to prioritise it
 python -m huntkit advise -p acme --provider ollama
+
+# 10. (optional) re-sweep on a schedule, ping me when a new finding lands
+python -m huntkit monitor acme.com -p acme \
+    --webhook "$SLACK_WEBHOOK" --interval 360
 ```
 
 With a single workspace, `-p` is inferred.
@@ -155,6 +163,7 @@ With a single workspace, `-p` is inferred.
 | `report -p <program> [-f md\|html\|json\|pdf]` | Write an engagement report. |
 | `diff -p <program> [--save] [--against <id>] [--list]` | Snapshot the result set and show what changed since a baseline. |
 | `dashboard -p <program> [--watch <secs>]` | One-screen engagement overview; `--watch` redraws it live. |
+| `monitor <domain> -p <program> [--webhook <url>] [--notify-on findings\|changes] [--interval <min>]` | Re-sweep, diff vs. last snapshot, and webhook-notify on new findings. |
 | `advise -p <program> [--provider] [--yes]` | LLM action plan (local, or cloud with approval). |
 | `secrets <paths…> [--endpoints] [--out]` | Scan gathered text for leaked secrets + JS endpoints (redacted). |
 | `fingerprint <file\|-> [--out]` | Identify CDN / WAF / cloud / tech from response headers. |
@@ -179,6 +188,7 @@ enrich — favicon hashes + ASN/BGP origins over the recon surface (pivot outwar
 shots  — gowitness screenshots of the live URLs, embedded in the HTML report
 secrets / fingerprint — standalone scanners over content you've gathered
 diff   — snapshot the result set and show the delta on the next sweep
+monitor — re-sweep on a schedule; diff vs. last snapshot; webhook on new findings
 ```
 
 The recon layer is a thin orchestrator over **plugins**; the analysis,
@@ -198,6 +208,10 @@ on a small `core` (config, workspace, state, runner) and `utils`.
   provider is sent nothing unless you confirm, after being shown the exact text
   and the destination host — and that check is enforced in the advisor layer,
   not just the CLI.
+- **Webhook egress is opt-in** — `monitor` only POSTs to a webhook you pass
+  explicitly (`--webhook`), scheme-guarded to http(s). Sending a diff to
+  Slack/Discord is egress of engagement data to a third party, so it never
+  happens by default and the CLI names the destination host before it sends.
 - **Enrichment egress is named** — `enrich` fetches favicons from in-scope
   targets (scheme-guarded to http/https), and its ASN lookup sends a resolved
   in-scope IP to Team Cymru's public WHOIS — the one call to a non-target host,

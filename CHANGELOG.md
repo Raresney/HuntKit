@@ -4,6 +4,20 @@ All notable changes to HuntKit are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims
 to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Docker image** — a multi-stage `Dockerfile` bakes the full external
+  toolchain (the ProjectDiscovery Go stack, gowitness + chromium, nmap,
+  whatweb, amass, findomain, arjun) plus HuntKit into one image, so it runs on
+  any host with Docker. Engagement data lives in the `/data` volume.
+- **Continuous monitoring** (`monitor`) — re-sweep a program, diff the result
+  set against the last snapshot, and push the delta to a Slack/Discord webhook
+  when a new finding (or, with `--notify-on changes`, any new asset) appears.
+  `--interval N` loops every N minutes. The webhook POST is opt-in egress and
+  scheme-guarded to http(s).
+
 ## [0.2.0] - 2026-10-27
 
 First tagged release. HuntKit 0.2 is a ground-up, modular rewrite of the
