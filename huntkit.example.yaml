@@ -5,7 +5,7 @@
 general:
   workspace_path: ~/.huntkit
   threads: 20
-  rate: 150
+  rate: 150                         # port-scan packets/sec (naabu)
   timeout: 300
   retry: 1
   default_report_format: markdown   # markdown | html | json
@@ -15,7 +15,8 @@ http:
   proxy: null                       # e.g. http://127.0.0.1:8080 for Burp
   user_agent: "HuntKit/0.2 (+https://github.com/Raresney/HuntKit)"
   headers: {}                       # e.g. { X-Bug-Bounty: my-handle }
-  rate_limit: 150
+  rate_limit: 150                   # HTTP requests/sec cap (0 = unlimited)
+  delay: 0.0                        # seconds between requests — raise to be gentle
   follow_redirects: true
 
 wordlists:
