@@ -8,6 +8,9 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Demo** — a self-contained terminal-cast SVG (`docs/demo.svg`) embedded in
+  the README, showing a full run end to end (scope guard → recon → scan →
+  analyze → report → monitor → dashboard). Renders inline on GitHub, no deps.
 - **PyPI distribution** — `pip install huntkit`. A tag-triggered release
   workflow builds the sdist + wheel, publishes to PyPI via OIDC trusted
   publishing (no stored token), and cuts a GitHub release.
