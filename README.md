@@ -202,6 +202,11 @@ on a small `core` (config, workspace, state, runner) and `utils`.
 - **Scope guard** — recon refuses any host not matched by the program's in-scope
   list (and honours out-of-scope patterns).
 - **Safe subprocess** — tools are run argv-only, never through a shell.
+- **Politeness, one knob** — `http.rate_limit` (requests/sec), `http.delay`
+  (seconds between requests) and `general.rate` (port-scan packets/sec) are a
+  single policy that HuntKit maps onto every rate-aware tool's native flags
+  (subfinder, dnsx, httpx, naabu, katana, nuclei, ffuf, dalfox). Dial a program
+  down to a gentle crawl in one place — real programs ban noisy scanners.
 - **Redaction** — the secret scanner masks every match, so its tables and JSON
   locate a leak without re-leaking it.
 - **Cloud-AI approval gate** — a local provider (Ollama) stays offline. A cloud

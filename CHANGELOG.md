@@ -17,6 +17,17 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   when a new finding (or, with `--notify-on changes`, any new asset) appears.
   `--interval N` loops every N minutes. The webhook POST is opt-in egress and
   scheme-guarded to http(s).
+- **Unified rate limiting / politeness** — a single policy (`http.rate_limit`,
+  new `http.delay`, `general.rate` for port scanning) is mapped onto every
+  rate-aware tool's native flags via `huntkit/core/pacing.py`, so a program can
+  be dialed down to a gentle crawl from one place. Previously only httpx,
+  nuclei and naabu honoured a rate; now subfinder, dnsx, katana, ffuf and
+  dalfox do too, and inter-request delay is new.
+
+### Changed
+
+- Rate flags that were hand-rolled per plugin now come from the shared
+  `Pace` policy, keeping the mapping in one tested place.
 
 ## [0.2.0] - 2026-10-27
 

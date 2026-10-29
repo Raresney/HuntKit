@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ..core.pacing import Pace, rate_arg
 from .base import Capability, Category, InputMode, PluginContext, ToolPlugin
 
 
@@ -15,4 +16,6 @@ class Subfinder(ToolPlugin):
     input_mode = InputMode.TARGET
 
     def build_args(self, ctx: PluginContext) -> list[str]:
-        return ["-silent", "-d", str(ctx.target)]
+        args = ["-silent", "-d", str(ctx.target)]
+        args += rate_arg("-rate-limit", Pace.from_config(ctx.config).rate)
+        return args

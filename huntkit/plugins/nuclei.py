@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ..core.pacing import Pace, rate_arg
 from .base import Capability, Category, InputMode, PluginContext, ToolPlugin
 
 
@@ -21,7 +22,6 @@ class Nuclei(ToolPlugin):
             args += ["-severity", n.severity]
         if n.templates:
             args += ["-t", n.templates]
-        if ctx.config.http.rate_limit:
-            args += ["-rate-limit", str(ctx.config.http.rate_limit)]
+        args += rate_arg("-rate-limit", Pace.from_config(ctx.config).rate)
         args += n.extra_args
         return args

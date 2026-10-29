@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ..core.pacing import Pace, delay_arg
 from .base import Capability, Category, InputMode, PluginContext, ToolPlugin
 
 
@@ -16,4 +17,8 @@ class Dalfox(ToolPlugin):
 
     def build_args(self, ctx: PluginContext) -> list[str]:
         # pipe mode reads candidate urls from stdin
-        return ["pipe", "--silence", "--no-color", "--no-spinner"]
+        pace = Pace.from_config(ctx.config)
+        args = ["pipe", "--silence", "--no-color", "--no-spinner"]
+        args += ["--worker", str(pace.concurrency)]
+        args += delay_arg("--delay", pace.delay, unit="ms")  # dalfox wants ms
+        return args

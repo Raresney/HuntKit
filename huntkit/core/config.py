@@ -42,7 +42,8 @@ class HttpConfig:
     proxy: Optional[str] = None  # e.g. http://127.0.0.1:8080 (Burp)
     user_agent: str = "HuntKit/0.2 (+https://github.com/Raresney/HuntKit)"
     headers: dict[str, str] = field(default_factory=dict)
-    rate_limit: int = 150
+    rate_limit: int = 150  # HTTP requests/sec hint passed to rate-aware tools
+    delay: float = 0.0  # seconds between requests for tools that support it
     follow_redirects: bool = True
 
 

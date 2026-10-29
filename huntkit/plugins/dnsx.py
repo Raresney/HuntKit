@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ..core.pacing import Pace, rate_arg
 from .base import Capability, Category, InputMode, PluginContext, ToolPlugin
 
 
@@ -15,4 +16,4 @@ class Dnsx(ToolPlugin):
     input_mode = InputMode.STDIN
 
     def build_args(self, ctx: PluginContext) -> list[str]:
-        return ["-silent", "-nc"]
+        return ["-silent", "-nc", *rate_arg("-rate-limit", Pace.from_config(ctx.config).rate)]

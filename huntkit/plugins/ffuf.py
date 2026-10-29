@@ -7,6 +7,7 @@ no marker, ``/FUZZ`` is appended; the wordlist comes from ``ctx.extra`` or
 
 from __future__ import annotations
 
+from ..core.pacing import Pace, delay_arg, rate_arg
 from .base import Capability, Category, InputMode, PluginContext, ToolPlugin
 
 
@@ -27,4 +28,7 @@ class Ffuf(ToolPlugin):
         wordlist = ctx.extra.get("wordlist") or ctx.config.wordlists.dir_fuzz
         if wordlist:
             args += ["-w", str(wordlist)]
+        pace = Pace.from_config(ctx.config)
+        args += rate_arg("-rate", pace.rate)  # ffuf: total requests/sec
+        args += delay_arg("-p", pace.delay, unit="sec")  # seconds between requests
         return args
