@@ -4,10 +4,13 @@ All notable changes to HuntKit are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims
 to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2026-10-29
 
 ### Added
 
+- **PyPI distribution** — `pip install huntkit`. A tag-triggered release
+  workflow builds the sdist + wheel, publishes to PyPI via OIDC trusted
+  publishing (no stored token), and cuts a GitHub release.
 - **Docker image** — a multi-stage `Dockerfile` bakes the full external
   toolchain (the ProjectDiscovery Go stack, gowitness + chromium, nmap,
   whatweb, amass, findomain, arjun) plus HuntKit into one image, so it runs on
