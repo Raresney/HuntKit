@@ -4,7 +4,8 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen)
-![Release](https://img.shields.io/badge/release-v0.2.0-blue)
+[![PyPI](https://img.shields.io/pypi/v/huntkit)](https://pypi.org/project/huntkit/)
+![Release](https://img.shields.io/badge/release-v0.3.0-blue)
 
 **Local-first bug-bounty recon, methodology & workflow framework for _authorised_ testing.**
 
@@ -66,6 +67,13 @@ you explicitly approve.
 ## Install
 
 Requires **Python 3.10+**. Runtime deps are light: `typer`, `rich`, `pyyaml`.
+
+```bash
+pip install huntkit         # or: pipx install huntkit
+huntkit doctor
+```
+
+Or from source:
 
 ```bash
 git clone https://github.com/Raresney/HuntKit.git
@@ -281,7 +289,7 @@ implementation, under this repository's MIT license with attribution.
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md). Current release: **v0.2.0**.
+See [CHANGELOG.md](CHANGELOG.md). Current release: **v0.3.0**.
 
 ---
 
