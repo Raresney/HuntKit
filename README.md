@@ -23,6 +23,17 @@ you explicitly approve.
 
 ---
 
+## Demo
+
+![HuntKit — an end-to-end recon run](docs/demo.svg)
+
+A full pass — scope guard, recon, scan, analyze, report, then continuous
+`monitor` and the live `dashboard` — against Acunetix's public, intentionally
+vulnerable test site. The step-by-step walkthrough with real output is in
+[DEMO.md](DEMO.md).
+
+---
+
 ## Highlights
 
 - **Parallel, resumable recon pipeline** — `subdomains → resolve → live → ports → urls`,

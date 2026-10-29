@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 588" font-family="ui-monospace, 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace" font-size="15">
+  <!-- window -->
+  <rect x="0" y="0" width="880" height="588" rx="12" fill="#0d1117"/>
+  <rect x="0" y="0" width="880" height="36" rx="12" fill="#161b22"/>
+  <rect x="0" y="24" width="880" height="12" fill="#161b22"/>
+  <circle cx="22" cy="18" r="6" fill="#ff5f57"/>
+  <circle cx="42" cy="18" r="6" fill="#febc2e"/>
+  <circle cx="62" cy="18" r="6" fill="#28c840"/>
+  <text x="440" y="23" fill="#8b949e" text-anchor="middle" font-size="13">huntkit — authorised recon</text>
+
+  <!-- body -->
+  <g>
+    <!-- doctor -->
+    <text x="20" y="68"><tspan fill="#3fb950">$</tspan> <tspan fill="#c9d1d9">huntkit doctor</tspan></text>
+    <text x="20" y="92" fill="#8b949e">  HuntKit <tspan fill="#58a6ff">0.3.0</tspan>  ·  data: ~/.huntkit</text>
+    <text x="20" y="114" fill="#8b949e">  <tspan fill="#3fb950">✓</tspan> subfinder  <tspan fill="#3fb950">✓</tspan> httpx  <tspan fill="#3fb950">✓</tspan> naabu  <tspan fill="#3fb950">✓</tspan> nuclei  <tspan fill="#3fb950">✓</tspan> gowitness   <tspan fill="#c9d1d9">16/18 tools</tspan></text>
+
+    <!-- scope guard -->
+    <text x="20" y="150"><tspan fill="#3fb950">$</tspan> <tspan fill="#c9d1d9">huntkit recon google.com -p vulnweb</tspan></text>
+    <text x="20" y="172" fill="#f85149">  ✗ google.com is out of scope for 'vulnweb' — blocked (exit 2)</text>
+
+    <!-- recon -->
+    <text x="20" y="208"><tspan fill="#3fb950">$</tspan> <tspan fill="#c9d1d9">huntkit recon testphp.vulnweb.com -p vulnweb</tspan></text>
+    <text x="20" y="230" fill="#58a6ff">  » subdomains → resolve → live → ports → urls</text>
+    <text x="20" y="252" fill="#8b949e">  <tspan fill="#3fb950">✓</tspan> 42 new assets.  Files under ~/.huntkit/vulnweb</text>
+
+    <!-- scan -->
+    <text x="20" y="288"><tspan fill="#3fb950">$</tspan> <tspan fill="#c9d1d9">huntkit scan -p vulnweb</tspan></text>
+    <text x="20" y="310" fill="#8b949e">  <tspan fill="#3fb950">✓</tspan> nuclei: 7 findings    <tspan fill="#3fb950">✓</tspan> dalfox: 2 findings</text>
+
+    <!-- analyze -->
+    <text x="20" y="346"><tspan fill="#3fb950">$</tspan> <tspan fill="#c9d1d9">huntkit analyze -p vulnweb</tspan></text>
+    <text x="20" y="368" fill="#8b949e">  priority: <tspan fill="#f85149">3 HIGH</tspan> · <tspan fill="#febc2e">5 MEDIUM</tspan>   top path: SQLi → listproducts.php?cat=</text>
+
+    <!-- report -->
+    <text x="20" y="404"><tspan fill="#3fb950">$</tspan> <tspan fill="#c9d1d9">huntkit report -p vulnweb -f html</tspan></text>
+    <text x="20" y="426" fill="#8b949e">  <tspan fill="#3fb950">✓</tspan> report → ~/.huntkit/vulnweb/reports/report.html  (screenshot gallery inlined)</text>
+
+    <!-- monitor -->
+    <text x="20" y="462"><tspan fill="#3fb950">$</tspan> <tspan fill="#c9d1d9">huntkit monitor testphp.vulnweb.com -p vulnweb --webhook $SLACK --interval 360</tspan></text>
+    <text x="20" y="484" fill="#8b949e">  ◷ watching every 6h — diffs each sweep, pings Slack on a <tspan fill="#58a6ff">new finding</tspan></text>
+
+    <!-- dashboard -->
+    <text x="20" y="520"><tspan fill="#3fb950">$</tspan> <tspan fill="#c9d1d9">huntkit dashboard -p vulnweb --watch 5</tspan></text>
+    <text x="20" y="542" fill="#8b949e">  one-screen live overview — priority, surface, top hosts, attack paths</text>
+
+    <text x="20" y="566"><tspan fill="#3fb950">$</tspan> <tspan fill="#c9d1d9">▌</tspan></text>
+  </g>
+</svg>
