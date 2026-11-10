@@ -111,7 +111,14 @@ The tools are Linux-native — a Kali VM (or WSL) is the intended runtime.
 ### Docker — the whole toolchain, baked
 
 No Linux box to set up? The image carries HuntKit **and** every external tool,
-so it runs anywhere Docker does:
+so it runs anywhere Docker does. Pull the published image from GHCR:
+
+```bash
+docker pull ghcr.io/raresney/huntkit:latest
+docker run --rm ghcr.io/raresney/huntkit doctor
+```
+
+…or build it yourself:
 
 ```bash
 docker build -t huntkit .
