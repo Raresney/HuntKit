@@ -11,11 +11,11 @@
 **Local-first bug-bounty recon, methodology & workflow framework for _authorised_ testing.**
 
 HuntKit drives the bug-bounty toolchain you already use (subfinder, httpx, naabu,
-gau, nuclei, ffuf, dalfox, …), keeps every engagement in a tidy per-program
-workspace, then **reasons over what it found** — scoring the attack surface,
-pointing you at the right playbooks, and writing a shareable report. Everything
-is offline and on your machine; the only time data can leave is a cloud-AI call
-you explicitly approve.
+gau, nuclei, ffuf, dalfox, and the rest) and keeps every engagement in a tidy
+per-program workspace. Then it reasons over what it found: it scores the attack
+surface, points you at the right playbooks, and writes a report you can share.
+Everything runs offline, on your machine. The only time data leaves is a
+cloud-AI call you approve first.
 
 > ⚠️ **Authorised testing only.** Use HuntKit against assets you own or that are
 > explicitly in scope for a bug-bounty program or signed engagement. It enforces
@@ -26,10 +26,10 @@ you explicitly approve.
 
 ## Demo
 
-![HuntKit — an end-to-end recon run](docs/demo.svg)
+![HuntKit: an end-to-end recon run](docs/demo.svg)
 
-A full pass — scope guard, recon, scan, analyze, report, then continuous
-`monitor` and the live `dashboard` — against Acunetix's public, intentionally
+A full pass (scope guard, recon, scan, analyze, report, then continuous
+`monitor` and the live `dashboard`) against Acunetix's public, intentionally
 vulnerable test site. The step-by-step walkthrough with real output is in
 [DEMO.md](DEMO.md).
 
@@ -37,42 +37,44 @@ vulnerable test site. The step-by-step walkthrough with real output is in
 
 ## Highlights
 
-- **Parallel, resumable recon pipeline** — `subdomains → resolve → live → ports → urls`,
-  running every available tool in each wave concurrently, deduped on disk, with
+- **Parallel, resumable recon pipeline.** `subdomains → resolve → live → ports → urls`,
+  running every available tool in each wave at once, deduped on disk, with
   stage resume and an opt-in content-addressed cache.
-- **Pluggable toolchain** — each external tool is one file in `huntkit/plugins/`.
-  Adding a tool is dropping a file; the pipeline wires it in by capability.
-- **Active scanning** — `scan` drives the vuln/fuzz plugins (nuclei, dalfox, …)
-  over the URLs recon gathered, **re-checked against scope**, writing findings
-  to the workspace's `scans/` dir — where `analyze` folds them into host scoring.
-- **Intelligence engine** — turns recon output **and scan findings** into scored,
-  prioritised hosts and **attack paths** (which bug class to run, and where), from
-  a declarative signal catalog. Pure and offline — it never touches the target.
-- **Knowledge base** — full playbooks for 9 bug classes (detection, payloads,
+- **Pluggable toolchain.** Each external tool is one file in `huntkit/plugins/`.
+  Adding a tool means dropping in a file; the pipeline wires it in by capability.
+- **Active scanning.** `scan` drives the vuln/fuzz plugins (nuclei, dalfox, and
+  so on) over the URLs recon gathered, re-checked against scope, and writes
+  findings to the workspace's `scans/` dir, where `analyze` folds them into host
+  scoring.
+- **Intelligence engine.** Turns recon output and scan findings into scored,
+  prioritised hosts and attack paths (which bug class to run, and where), from a
+  declarative signal catalog. It is pure and offline, and never touches the
+  target.
+- **Knowledge base.** Full playbooks for 9 bug classes (detection, payloads,
   bypasses, tools, references), cross-linked from the attack paths.
-- **Reporting** — one model rendered to Markdown, a self-contained HTML page, or
-  JSON (PDF when `weasyprint` is present, else print-ready HTML).
-- **AI advisor (optional)** — hand the scored surface to a local Ollama model, or
-  a cloud model (Claude/OpenAI) **only after an explicit approval prompt that
-  shows exactly what will be sent**.
-- **Content scanners** — a redacting secret & JS-endpoint scanner, and a
+- **Reporting.** One model rendered to Markdown, a self-contained HTML page, or
+  JSON (PDF when `weasyprint` is present, otherwise print-ready HTML).
+- **AI advisor (optional).** Hand the scored surface to a local Ollama model, or
+  to a cloud model (Claude/OpenAI) only after an approval prompt that shows
+  exactly what will be sent.
+- **Content scanners.** A redacting secret and JS-endpoint scanner, plus a
   header-based CDN/WAF/cloud/tech fingerprinter.
-- **Asset-correlation enrichment** — `enrich` hashes each origin's favicon
-  (the Shodan `http.favicon.hash:` pivot) and maps every host to its ASN /
-  BGP prefix, turning one asset into the rest of the estate to sweep.
-- **Screenshot gallery** — `shots` drives `gowitness` over the live URLs and
-  the report embeds the captures as a grid (inlined, so the HTML stays one
-  self-contained file) — eyeball a big surface at a glance.
-- **Diff across runs** — `diff` snapshots a program's result set and shows the
-  delta on the next sweep: new subdomains, freshly-live URLs, and above all
-  **new findings** — the thing you actually re-run a program to catch.
-- **Live dashboard** — `dashboard` paints the whole engagement on one screen
+- **Asset-correlation enrichment.** `enrich` hashes each origin's favicon (the
+  Shodan `http.favicon.hash:` pivot) and maps every host to its ASN and BGP
+  prefix, so one asset points you at the rest of the estate to sweep.
+- **Screenshot gallery.** `shots` drives `gowitness` over the live URLs, and the
+  report embeds the captures as a grid (inlined, so the HTML stays one
+  self-contained file). Handy for scanning a large surface quickly.
+- **Diff across runs.** `diff` snapshots a program's result set and shows the
+  delta on the next sweep: new subdomains, freshly-live URLs, and above all new
+  findings, which is the thing you actually re-run a program to catch.
+- **Live dashboard.** `dashboard` paints the whole engagement on one screen
   (priority, recon surface, top hosts, attack paths, notable exposures,
-  enrichment) and `--watch` redraws it live. Built on Rich — no extra deps.
-- **Continuous monitoring** — `monitor` re-sweeps a program, diffs the result
-  set against the last snapshot, and pings a Slack/Discord webhook the moment a
-  **new finding** turns up. `--interval N` loops every N minutes — a program
-  watches itself while you sleep.
+  enrichment), and `--watch` redraws it live. Built on Rich, no extra deps.
+- **Continuous monitoring.** `monitor` re-sweeps a program, diffs the result set
+  against the last snapshot, and pings a Slack/Discord webhook the moment a new
+  finding turns up. `--interval N` loops every N minutes, so a program keeps
+  watching after you walk away.
 
 ---
 
@@ -97,8 +99,8 @@ python -m huntkit doctor
 ```
 
 The external tools are the usual bug-bounty stack. `doctor` shows what you have;
-anything missing is reported with its install hint and that stage is simply
-skipped, so HuntKit is useful even on a fresh box.
+anything missing is reported with its install hint and that stage is skipped, so
+HuntKit still works on a fresh box.
 
 On a Debian-family box (Kali / Ubuntu), the whole toolchain plus HuntKit itself
 installs in one shot:
@@ -107,12 +109,12 @@ installs in one shot:
 bash scripts/install-tools.sh    # apt + go install + arjun, then huntkit in a venv
 ```
 
-The tools are Linux-native — a Kali VM (or WSL) is the intended runtime.
+The tools are Linux-native, so a Kali VM (or WSL) is the intended runtime.
 
-### Docker — the whole toolchain, baked
+### Docker: the whole toolchain, baked
 
-No Linux box to set up? The image carries HuntKit **and** every external tool,
-so it runs anywhere Docker does. Pull the published image from GHCR:
+No Linux box to set up? The image carries HuntKit and every external tool, so it
+runs anywhere Docker does. Pull the published image from GHCR:
 
 ```bash
 docker pull ghcr.io/raresney/huntkit:latest
@@ -125,7 +127,7 @@ docker run --rm ghcr.io/raresney/huntkit doctor
 docker build -t huntkit .
 docker run --rm huntkit doctor
 
-# a real run — mount a dir to keep workspaces, add caps for naabu's SYN scan
+# a real run: mount a dir to keep workspaces, add caps for naabu's SYN scan
 docker run --rm -v "$PWD/hk-data:/data" \
     --cap-add=NET_ADMIN --cap-add=NET_RAW \
     huntkit recon acme.com -p acme
@@ -218,41 +220,41 @@ diff   — snapshot the result set and show the delta on the next sweep
 monitor — re-sweep on a schedule; diff vs. last snapshot; webhook on new findings
 ```
 
-The recon layer is a thin orchestrator over **plugins**; the analysis,
-knowledge, reporting, AI and scanner layers are pure feature packages that build
-on a small `core` (config, workspace, state, runner) and `utils`.
+The recon layer is a thin orchestrator over plugins. The analysis, knowledge,
+reporting, AI and scanner layers are pure feature packages that build on a small
+`core` (config, workspace, state, runner) and `utils`.
 
 ---
 
 ## Security model
 
-- **Scope guard** — recon refuses any host not matched by the program's in-scope
-  list (and honours out-of-scope patterns).
-- **Safe subprocess** — tools are run argv-only, never through a shell.
-- **Politeness, one knob** — `http.rate_limit` (requests/sec), `http.delay`
+- **Scope guard.** Recon refuses any host not matched by the program's in-scope
+  list, and honours out-of-scope patterns.
+- **Safe subprocess.** Tools are run argv-only, never through a shell.
+- **Politeness, one knob.** `http.rate_limit` (requests/sec), `http.delay`
   (seconds between requests) and `general.rate` (port-scan packets/sec) are a
   single policy that HuntKit maps onto every rate-aware tool's native flags
   (subfinder, dnsx, httpx, naabu, katana, nuclei, ffuf, dalfox). Dial a program
-  down to a gentle crawl in one place — real programs ban noisy scanners.
-- **Redaction** — the secret scanner masks every match, so its tables and JSON
+  down to a gentle crawl in one place. Real programs ban noisy scanners.
+- **Redaction.** The secret scanner masks every match, so its tables and JSON
   locate a leak without re-leaking it.
-- **Cloud-AI approval gate** — a local provider (Ollama) stays offline. A cloud
-  provider is sent nothing unless you confirm, after being shown the exact text
-  and the destination host — and that check is enforced in the advisor layer,
+- **Cloud-AI approval gate.** A local provider (Ollama) stays offline. A cloud
+  provider is sent nothing unless you confirm, after you are shown the exact
+  text and the destination host. That check is enforced in the advisor layer,
   not just the CLI.
-- **Webhook egress is opt-in** — `monitor` only POSTs to a webhook you pass
+- **Webhook egress is opt-in.** `monitor` only POSTs to a webhook you pass
   explicitly (`--webhook`), scheme-guarded to http(s). Sending a diff to
   Slack/Discord is egress of engagement data to a third party, so it never
-  happens by default and the CLI names the destination host before it sends.
-- **Enrichment egress is named** — `enrich` fetches favicons from in-scope
+  happens by default, and the CLI names the destination host before it sends.
+- **Enrichment egress is named.** `enrich` fetches favicons from in-scope
   targets (scheme-guarded to http/https), and its ASN lookup sends a resolved
-  in-scope IP to Team Cymru's public WHOIS — the one call to a non-target host,
-  called out in the CLI before it runs.
-- **Engagement data is gitignored** — never commit a workspace.
+  in-scope IP to Team Cymru's public WHOIS. That is the one call to a non-target
+  host, and the CLI calls it out before it runs.
+- **Engagement data is gitignored.** Never commit a workspace.
 
 ---
 
-## Extending — add a row, not a branch
+## Extending: add a row, not a branch
 
 The framework is built around declarative catalogs:
 
@@ -294,7 +296,7 @@ mypy huntkit                 # type-check
 pytest --cov=huntkit         # tests (92% coverage, gate at 90%)
 ```
 
-CI runs lint, format-check, type-check and tests on Python 3.10–3.13.
+CI runs lint, format-check, type-check and tests on Python 3.10 to 3.13.
 
 ---
 
@@ -314,4 +316,4 @@ See [CHANGELOG.md](CHANGELOG.md). Current release: **v0.3.0**.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
