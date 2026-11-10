@@ -20,7 +20,11 @@
 # --------------------------------------------------------------------------
 # stage 1 — build the Go toolchain (and grab findomain's release binary)
 # --------------------------------------------------------------------------
-FROM golang:1.23-bookworm AS builder
+# The ProjectDiscovery tools track the Go release closely — subfinder already
+# needs >= 1.26. Pin a floor that satisfies them and keep GOTOOLCHAIN=auto so a
+# tool demanding an even newer Go pulls that toolchain itself instead of failing
+# the build (the official image otherwise pins GOTOOLCHAIN=local).
+FROM golang:1.27-bookworm AS builder
 
 # libpcap-dev: naabu links against it (cgo). unzip: findomain release asset.
 RUN apt-get update \
@@ -28,6 +32,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 ENV GOBIN=/go/bin
+ENV GOTOOLCHAIN=auto
 # One tool per layer would bloat the cache; a single RUN keeps the image lean
 # and still fails the build loudly if any tool stops building.
 RUN go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest \
