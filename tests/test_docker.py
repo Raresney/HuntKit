@@ -14,6 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DOCKERFILE = ROOT / "Dockerfile"
 DOCKERIGNORE = ROOT / ".dockerignore"
+DOCKER_WORKFLOW = ROOT / ".github" / "workflows" / "docker.yml"
 
 
 def _dockerfile() -> str:
@@ -64,3 +65,30 @@ def test_dockerignore_excludes_engagement_data() -> None:
     text = DOCKERIGNORE.read_text(encoding="utf-8")
     assert ".huntkit" in text
     assert ".git" in text
+
+
+def _docker_workflow() -> str:
+    return DOCKER_WORKFLOW.read_text(encoding="utf-8")
+
+
+def test_ghcr_workflow_exists_and_pushes() -> None:
+    # the image is published to GHCR, not left as a local-only build.
+    text = _docker_workflow()
+    assert "ghcr.io/raresney/huntkit" in text
+    assert "docker/build-push-action" in text
+    assert "push: true" in text
+
+
+def test_ghcr_workflow_fires_on_version_tags() -> None:
+    # same version tags as the PyPI release, plus an on-demand trigger.
+    text = _docker_workflow()
+    assert 'tags:\n      - "v*"' in text
+    assert "workflow_dispatch" in text
+
+
+def test_ghcr_workflow_uses_builtin_token() -> None:
+    # GHCR auth is the built-in GITHUB_TOKEN with packages:write — no stored
+    # registry credential.
+    text = _docker_workflow()
+    assert "packages: write" in text
+    assert "secrets.GITHUB_TOKEN" in text
