@@ -29,12 +29,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Derive version from the package
+      - name: Derive version and image tags
         id: ver
         run: |
           v="$(python3 -c "import re; print(re.search(r'__version__\s*=\s*\"([^\"]+)\"', open('huntkit/__init__.py').read()).group(1))")"
           echo "version=$v" >> "$GITHUB_OUTPUT"
-          echo "huntkit $v"
+          echo "huntkit $v (ref_type=$GITHUB_REF_TYPE)"
+          # Always publish the version-pinned tag. Only move :latest for a real
+          # version tag — a workflow_dispatch from an older ref must never drag
+          # :latest backward to a stale image.
+          tags="$IMAGE:$v"
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            tags="$tags"$'\n'"$IMAGE:latest"
+          fi
+          {
+            echo "tags<<__TAGS__"
+            echo "$tags"
+            echo "__TAGS__"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Guard — tag matches package version
         if: startsWith(github.ref, 'refs/tags/')
@@ -61,8 +73,6 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
-          tags: |
-            ${{ env.IMAGE }}:${{ steps.ver.outputs.version }}
-            ${{ env.IMAGE }}:latest
+          tags: ${{ steps.ver.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
