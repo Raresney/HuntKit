@@ -23,6 +23,7 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from typing import Optional
+from urllib.parse import urlparse
 
 from .core.config import Config
 from .core.runner import CommandRunner
@@ -266,15 +267,25 @@ class Pipeline:
         )
 
     def _scope_filter(self, stage: str, items: list[str]) -> list[str]:
-        """Keep discovered subdomains inside scope; pass other stages through.
+        """Drop out-of-scope results before they are written to disk.
 
-        Later stages derive from the already-filtered subdomain set, so only
-        discovery needs a scope check — defence in depth so a noisy source can
-        never write an out-of-scope host to disk.
+        ``subs`` yields bare hosts; ``urls`` yields full URLs whose host is
+        checked against scope. Later stages derive from the already-filtered
+        subdomain set, so they pass through — defence in depth so a noisy
+        source can never write an out-of-scope host to disk or the reports.
         """
-        if stage != "subs":
-            return items
-        return self.ws.filter_scope(items)
+        if stage == "subs":
+            return self.ws.filter_scope(items)
+        if stage == "urls":
+            return [u for u in items if self._url_in_scope(u)]
+        return items
+
+    def _url_in_scope(self, url: str) -> bool:
+        parsed = urlparse(url if "://" in url else f"//{url}", scheme="http")
+        host = parsed.hostname
+        if not host:
+            return False
+        return self.ws.in_scope(host)
 
 
 def run_recon(
