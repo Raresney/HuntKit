@@ -15,6 +15,7 @@ utils) — never on plugins or features — so anything above can build on it.
 
 from __future__ import annotations
 
+import ipaddress
 import os
 from pathlib import Path
 
@@ -95,8 +96,9 @@ class Workspace:
         """True if ``host`` matches an in-scope pattern and no out-of-scope one.
 
         Patterns accept a leading ``*.`` wildcard (``*.example.com`` matches
-        the apex and any subdomain). With no in-scope patterns defined,
-        everything not explicitly excluded is considered in scope.
+        the apex and any subdomain) and ``a.b.c.d/n`` CIDR networks (an IP host
+        matches when it falls inside the range). With no in-scope patterns
+        defined, everything not explicitly excluded is considered in scope.
         """
         if any(_match(host, p) for p in self.scope_out):
             return False
@@ -132,6 +134,11 @@ class Workspace:
 def _match(host: str, pattern: str) -> bool:
     host = host.lower().strip()
     pattern = pattern.lower().strip()
+    if "/" in pattern:  # CIDR network — host must be an IP inside it
+        try:
+            return ipaddress.ip_address(host) in ipaddress.ip_network(pattern, strict=False)
+        except ValueError:
+            return False
     if pattern.startswith("*."):
         suffix = pattern[1:]  # ".example.com"
         return host == pattern[2:] or host.endswith(suffix)

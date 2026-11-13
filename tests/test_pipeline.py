@@ -224,3 +224,26 @@ def test_threads_option_runs(tmp_path):
     cfg = Config()
     run_recon(ws, cfg, "example.com", threads=4, runner=CommandRunner(cfg), registry=_registry())
     assert ws.count("recon/subdomains.txt") == 3
+
+
+def test_scope_filter_drops_out_of_scope_urls(tmp_path):
+    ws = _ws(tmp_path)  # scope: *.example.com
+    pipe = Pipeline(ws, Config())
+    urls = [
+        "https://api.example.com/login",
+        "http://evil.org/x",  # out-of-scope host must be dropped
+        "https://www.example.com:8443/app",  # port tolerated
+    ]
+    kept = pipe._scope_filter("urls", urls)
+    assert kept == [
+        "https://api.example.com/login",
+        "https://www.example.com:8443/app",
+    ]
+
+
+def test_scope_filter_passes_other_stages_through(tmp_path):
+    ws = _ws(tmp_path)
+    pipe = Pipeline(ws, Config())
+    items = ["1.2.3.4", "5.6.7.8"]
+    # resolve/live/ports derive from the already-filtered subdomain set
+    assert pipe._scope_filter("resolve", items) == items

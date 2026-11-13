@@ -34,6 +34,24 @@ def test_scope_roundtrip_and_matching(tmp_path):
     assert not ws.in_scope("other.org")
 
 
+def test_cidr_scope_matches_ip_inside_range(tmp_path):
+    ws = _ws(tmp_path)
+    ws.set_scope(["10.0.0.0/24"], [])
+    assert ws.in_scope("10.0.0.5")
+    assert ws.in_scope("10.0.0.255")
+    # outside the /24 and non-IP hosts do not match an IP network
+    assert not ws.in_scope("10.0.1.5")
+    assert not ws.in_scope("example.com")
+
+
+def test_cidr_out_of_scope_excludes_ip(tmp_path):
+    ws = _ws(tmp_path)
+    ws.set_scope([], ["192.168.0.0/16"])
+    # out-of-scope network wins; with no in-scope list, others pass
+    assert not ws.in_scope("192.168.1.1")
+    assert ws.in_scope("10.0.0.5")
+
+
 def test_no_scope_means_everything_in(tmp_path):
     ws = _ws(tmp_path)
     assert not ws.has_scope()

@@ -43,6 +43,14 @@ def test_doctor_runs(home):
     assert "subfinder" in result.stdout
 
 
+def test_doctor_reports_workspace_override(home, tmp_path):
+    override = tmp_path / "my-ws"
+    result = runner.invoke(app, ["-w", str(override), "doctor"])
+    assert result.exit_code == 0
+    # the --workspace override is reflected, not the default root
+    assert "my-ws" in result.stdout
+
+
 def test_plugins_list(home):
     result = runner.invoke(app, ["plugins", "list"])
     assert result.exit_code == 0

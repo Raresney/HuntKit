@@ -19,7 +19,7 @@ from rich.markup import escape
 
 from .. import __version__
 from ..ai import Advisor, ApprovalDenied, ProviderError, get_provider, provider_names
-from ..core.workspace import Workspace, list_workspaces
+from ..core.workspace import Workspace, default_base, list_workspaces
 from ..enrich import EnrichReport, run_enrich
 from ..fingerprint import fingerprint_headers, has_waf
 from ..history import DiffReport, capture, current_vs, find, latest, list_snapshots, save
@@ -126,7 +126,7 @@ def doctor(ctx: typer.Context) -> None:
         )
     else:
         term.ok("full toolchain present.")
-    term.info(f"workspace root: {app_ctx.config.workspace_root}")
+    term.info(f"workspace root: {app_ctx.base or default_base(app_ctx.config)}")
     if app_ctx.config._sources:
         term.info("config: " + ", ".join(app_ctx.config._sources))
 
