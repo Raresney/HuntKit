@@ -512,7 +512,7 @@ def report(
     program: Optional[str] = typer.Option(
         None, "--program", "-p", help="Workspace to report on (default: the only one)."
     ),
-    fmt: str = typer.Option("md", "--format", "-f", help="md | html | json | pdf."),
+    fmt: str = typer.Option("md", "--format", "-f", help="md | html | json | sarif | pdf."),
     out: Optional[Path] = typer.Option(
         None, "--out", "-o", help="Write here instead of the workspace reports/ dir."
     ),
