@@ -185,7 +185,7 @@ With a single workspace, `-p` is inferred.
 | `doctor` | Show which external tools are installed / missing, and where data lives. |
 | `init <program> -s <scope>` | Create a workspace and set in/out scope (`*.wildcards` ok). |
 | `recon <domain\|ip\|cidr> [--stage] [--threads] [--fresh] [--no-cache]` | Parallel, resumable recon pipeline. An IP/CIDR seed skips the subdomain phase. |
-| `scan -p <program> [--tool] [--threads] [--no-cache]` | Run the vuln/fuzz scanners (nuclei, dalfox) over the gathered in-scope URLs. |
+| `scan -p <program> [--tool] [--threads] [--no-cache] [--nuclei-arg]` | Run the vuln/fuzz scanners (nuclei, dalfox) over the gathered in-scope URLs. `-N` passes extra args through to nuclei. |
 | `enrich -p <program> [--favicon/--no-favicon] [--asn/--no-asn]` | Favicon hashes (Shodan pivot) + ASN/BGP origin per host. |
 | `shots -p <program>` | Screenshot every live in-scope URL (gowitness) for the report gallery. |
 | `analyze -p <program>` | Score hosts Low→Critical and roll signals into attack paths. |
