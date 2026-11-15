@@ -81,6 +81,22 @@ class CountingSub(ToolPlugin):
         return PluginResult(self.name, self.produces, items=["api.example.com"], ok=True)
 
 
+class _RecordingGau(ToolPlugin):
+    name = "gau"
+    category = Category.DISCOVERY
+    consumes = Capability.DOMAIN
+    produces = Capability.URL
+    input_mode = InputMode.TARGET
+    calls = 0
+
+    def build_args(self, ctx: PluginContext):
+        return []
+
+    def execute(self, ctx: PluginContext) -> PluginResult:
+        type(self).calls += 1
+        return PluginResult(self.name, self.produces, items=[], ok=True)
+
+
 def _registry():
     reg = PluginRegistry()
     reg.register(StubSubfinder())
@@ -247,3 +263,27 @@ def test_scope_filter_passes_other_stages_through(tmp_path):
     items = ["1.2.3.4", "5.6.7.8"]
     # resolve/live/ports derive from the already-filtered subdomain set
     assert pipe._scope_filter("resolve", items) == items
+
+
+def test_cidr_seed_skips_subdomain_phase(tmp_path):
+    ws = Workspace.open("net", base=tmp_path)
+    ws.set_scope(["10.0.0.0/24"], [])
+    cfg = Config()
+    run_recon(ws, cfg, "10.0.0.0/24", runner=CommandRunner(cfg), registry=_registry())
+    # the CIDR seeds the resolved set directly, not the subdomain set
+    assert ws.read_lines("recon/resolved.txt") == ["10.0.0.0/24"]
+    assert ws.read_lines("recon/subdomains.txt") == []
+    # subs stage never ran; live stage consumed the seed
+    assert ws.state.status("subs").value != "done"
+    assert ws.read_lines("recon/live.txt") == ["https://10.0.0.0/24"]
+
+
+def test_ip_seed_skips_passive_url_plugins(tmp_path):
+    ws = Workspace.open("host", base=tmp_path)
+    ws.set_scope(["10.0.0.5"], [])
+    cfg = Config()
+    reg = _registry()
+    reg.register(_RecordingGau())
+    run_recon(ws, cfg, "10.0.0.5", runner=CommandRunner(cfg), registry=reg)
+    # gau walks a seed domain; an IP seed must not invoke it
+    assert _RecordingGau.calls == 0

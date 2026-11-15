@@ -30,6 +30,7 @@ from .core.runner import CommandRunner
 from .core.workspace import Workspace
 from .plugins import Capability, PluginContext, PluginResult, ToolPlugin, get_registry
 from .plugins.registry import PluginRegistry
+from .utils import validators as v
 
 # Ordered recon stages and the plugins that feed each. Every *available*
 # plugin in a stage runs and its output is merged, so more installed tools
@@ -116,6 +117,7 @@ class Pipeline:
         self._emit: EventFn = on_event or (lambda _e: None)
         self.threads = threads or config.general.threads
         self.use_cache = use_cache
+        self._seed_kind = "domain"
 
     # ---- public API ------------------------------------------------------
     def run(
@@ -125,10 +127,18 @@ class Pipeline:
         *,
         resume: bool = True,
     ) -> ReconSummary:
-        wanted = set(stages or RECON_STAGES)
+        # An IP/CIDR seed has no subdomain/DNS phase: it seeds the resolved
+        # set directly and the pipeline runs live/ports/urls over the address
+        # range. A domain seeds the subdomain set and runs the full chain.
+        self._seed_kind = v.seed_kind(domain) or "domain"
         summary = ReconSummary(domain=domain)
-        # the seed itself is the first in-scope asset
-        self.ws.append_unique(STAGE_FILES["subs"], [domain])
+        if self._seed_kind == "domain":
+            self.ws.append_unique(STAGE_FILES["subs"], [domain])
+            default_stages = RECON_STAGES
+        else:
+            self.ws.append_unique(STAGE_FILES["resolve"], [domain])
+            default_stages = ["live", "ports", "urls"]
+        wanted = set(stages or default_stages)
 
         with ThreadPoolExecutor(max_workers=self.threads) as pool:
             for wave in WAVES:
@@ -164,6 +174,10 @@ class Pipeline:
             self._emit({"event": "stage_start", "stage": stage})
             self.ws.state.start(stage)
             for name in STAGE_PLUGINS[stage]:
+                # gau/waybackurls walk a seed *domain*; an IP/CIDR seed has no
+                # passive-URL history, so skip them rather than query junk.
+                if self._seed_kind != "domain" and name in _SEED_URL_PLUGINS:
+                    continue
                 plugin = self.registry.get(name)
                 if plugin is None:
                     continue
