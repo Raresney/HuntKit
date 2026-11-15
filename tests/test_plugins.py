@@ -117,6 +117,12 @@ class TestBuildArgs:
         args = discover().get("nuclei").build_args(_ctx(cfg=cfg))
         assert "critical" in args and "/t" in args
 
+    def test_nuclei_appends_extra_args(self):
+        # the scan -N passthrough lands in nuclei.extra_args and reaches argv
+        cfg = Config.from_dict({"nuclei": {"extra_args": ["-system-resolvers"]}})
+        args = discover().get("nuclei").build_args(_ctx(cfg=cfg))
+        assert args[-1] == "-system-resolvers"
+
     def test_ffuf_adds_fuzz_marker_and_wordlist(self):
         args = discover().get("ffuf").build_args(_ctx(target="https://x.com", wordlist="/wl"))
         assert "https://x.com/FUZZ" in args

@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import sys
 import urllib.parse
+from dataclasses import replace
 from pathlib import Path
 from typing import Optional
 
@@ -301,6 +302,13 @@ def scan(
     no_cache: bool = typer.Option(
         False, "--no-cache", help="Bypass the tool-output cache for this run."
     ),
+    nuclei_arg: Optional[list[str]] = typer.Option(
+        None,
+        "--nuclei-arg",
+        "-N",
+        help="Extra arg passed through to nuclei (repeatable), "
+        "e.g. -N -system-resolvers  or  -N -severity -N info,low,medium,high,critical.",
+    ),
 ) -> None:
     """Run the vuln/fuzz scanners (nuclei, dalfox, …) over the gathered URLs."""
     app_ctx = ctx.obj
@@ -309,11 +317,19 @@ def scan(
         term.error("which workspace? pass -p <program> (none, or several, found).")
         raise typer.Exit(2)
 
-    ws = Workspace.open(program, config=app_ctx.config, base=app_ctx.base)
+    # per-run nuclei passthrough: derive a config, never mutate the shared one
+    config = app_ctx.config
+    if nuclei_arg:
+        config = replace(
+            config,
+            nuclei=replace(config.nuclei, extra_args=[*config.nuclei.extra_args, *nuclei_arg]),
+        )
+
+    ws = Workspace.open(program, config=config, base=app_ctx.base)
     term.banner(f"scan — {program}")
     summary = run_scan(
         ws,
-        app_ctx.config,
+        config,
         tools=tool,
         runner=app_ctx.runner,
         registry=app_ctx.registry,
@@ -349,6 +365,18 @@ def _print_scan_summary(summary: ScanSummary, ws: Workspace) -> None:
     )
     if summary.total_findings:
         term.info(f"fold findings into host scoring:  huntkit analyze -p {summary.program}")
+    elif summary.ran:
+        # 0 findings over real targets is often a config/resolver effect, not
+        # a clean target — point at the two knobs that most often cause it.
+        term.info(
+            "0 findings — nuclei skips [bold]info[/bold]-level issues (missing headers, "
+            "tech/CVE detection) by default and resolves hosts with its own DNS."
+        )
+        term.info(
+            "widen with the `nuclei:` section in huntkit.yaml (severity / extra_args), "
+            "or this run:  huntkit scan -p "
+            f"{summary.program} -N -severity -N info,low,medium,high,critical"
+        )
 
 
 # --------------------------------------------------------------------------

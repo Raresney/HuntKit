@@ -16,7 +16,7 @@ from huntkit.plugins import (
     ToolPlugin,
 )
 from huntkit.plugins.registry import PluginRegistry
-from huntkit.scanner import run_scan, scan_targets
+from huntkit.scanner import ScanOutcome, ScanSummary, run_scan, scan_targets
 
 runner = CliRunner()
 
@@ -195,3 +195,33 @@ def test_scan_needs_a_program(home):
     # no workspace exists yet -> cannot infer one
     result = runner.invoke(app, ["scan"])
     assert result.exit_code == 2
+
+
+def test_scan_hints_when_zero_findings(monkeypatch, tmp_path):
+    import io
+
+    from rich.console import Console
+
+    from huntkit.app.main import _print_scan_summary
+    from huntkit.utils import terminal as term
+
+    buf = io.StringIO()
+    monkeypatch.setattr(term, "console", Console(file=buf, no_color=True, width=120))
+    ws = Workspace.open("t", base=tmp_path)
+    # a scanner ran over real targets but produced nothing
+    summary = ScanSummary(
+        program="t",
+        targets=3,
+        outcomes=[ScanOutcome(tool="nuclei", findings=[], ran=True)],
+    )
+    _print_scan_summary(summary, ws)
+    out = buf.getvalue()
+    assert "0 findings" in out
+    assert "info" in out  # points at the excluded-severity knob
+
+
+def test_scan_accepts_nuclei_passthrough(home):
+    # -N parses and the run exits cleanly even with no scanner installed
+    runner.invoke(app, ["init", "acme", "-s", "*.example.com"])
+    result = runner.invoke(app, ["scan", "-p", "acme", "-N", "-system-resolvers"])
+    assert result.exit_code == 0
