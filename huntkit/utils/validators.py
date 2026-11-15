@@ -41,16 +41,40 @@ def is_ip(value: str) -> bool:
         return False
 
 
-def is_scope_entry(value: str) -> bool:
-    """Accept a bare domain, a wildcard domain, or an IP/CIDR."""
-    value = value.strip().lower()
-    if is_domain(value) or is_wildcard(value) or is_ip(value):
-        return True
+def is_network(value: str) -> bool:
+    """True for a CIDR network like ``10.0.0.0/24`` (not a bare IP)."""
+    value = value.strip()
+    if "/" not in value:
+        return False
     try:
         ipaddress.ip_network(value, strict=False)
         return True
     except ValueError:
         return False
+
+
+def seed_kind(value: str) -> str | None:
+    """Classify a recon seed as ``"domain"``, ``"ip"``, ``"cidr"``, or None.
+
+    A seed drives the whole pipeline: a domain gets the subdomain/DNS phase,
+    while an IP or CIDR skips straight to live/ports/urls over the address set.
+    """
+    value = value.strip().lower()
+    if is_network(value):
+        return "cidr"
+    if is_ip(value):
+        return "ip"
+    if is_domain(value):
+        return "domain"
+    return None
+
+
+def is_scope_entry(value: str) -> bool:
+    """Accept a bare domain, a wildcard domain, or an IP/CIDR."""
+    value = value.strip().lower()
+    if is_domain(value) or is_wildcard(value) or is_ip(value):
+        return True
+    return is_network(value)
 
 
 def is_url(value: str) -> bool:

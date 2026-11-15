@@ -52,6 +52,40 @@ def test_cidr_out_of_scope_excludes_ip(tmp_path):
     assert ws.in_scope("10.0.0.5")
 
 
+def test_network_in_scope_requires_covering_entry(tmp_path):
+    ws = _ws(tmp_path)
+    ws.set_scope(["10.0.0.0/16"], [])
+    # seed network inside the in-scope supernet
+    assert ws.network_in_scope("10.0.1.0/24")
+    assert ws.network_in_scope("10.0.0.0/16")  # equal counts as covered
+    # a bare IP inside the range is accepted as a /32
+    assert ws.network_in_scope("10.0.5.5")
+    # a wider or unrelated range is not covered
+    assert not ws.network_in_scope("10.0.0.0/8")
+    assert not ws.network_in_scope("192.168.0.0/24")
+
+
+def test_network_in_scope_excluded_by_out_scope(tmp_path):
+    ws = _ws(tmp_path)
+    ws.set_scope(["10.0.0.0/8"], ["10.0.5.0/24"])
+    assert ws.network_in_scope("10.0.4.0/24")
+    # overlapping an out-of-scope range excludes the seed
+    assert not ws.network_in_scope("10.0.5.0/24")
+    assert not ws.network_in_scope("10.0.0.0/8")  # contains the excluded range
+
+
+def test_network_in_scope_rejects_when_scope_is_domains_only(tmp_path):
+    ws = _ws(tmp_path)
+    ws.set_scope(["*.example.com"], [])
+    # a domain-only scope does not authorise any IP range
+    assert not ws.network_in_scope("10.0.0.0/24")
+
+
+def test_network_in_scope_open_when_no_scope(tmp_path):
+    ws = _ws(tmp_path)
+    assert ws.network_in_scope("10.0.0.0/24")
+
+
 def test_no_scope_means_everything_in(tmp_path):
     ws = _ws(tmp_path)
     assert not ws.has_scope()

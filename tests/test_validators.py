@@ -44,6 +44,21 @@ class TestWildcardAndScope:
         assert not v.is_wildcard_scope_risky(["example.com"])
 
 
+class TestSeedKind:
+    def test_is_network(self):
+        assert v.is_network("10.0.0.0/24")
+        assert v.is_network("2001:db8::/32")
+        assert not v.is_network("10.0.0.1")  # bare IP is not a network
+        assert not v.is_network("example.com")
+
+    def test_seed_kind(self):
+        assert v.seed_kind("example.com") == "domain"
+        assert v.seed_kind("api.example.com") == "domain"
+        assert v.seed_kind("10.0.0.5") == "ip"
+        assert v.seed_kind("10.0.0.0/24") == "cidr"
+        assert v.seed_kind("not a seed") is None
+
+
 class TestUrl:
     def test_valid(self):
         assert v.is_url("https://example.com")

@@ -8,6 +8,7 @@ modules and are mounted here. Run it with the ``huntkit`` console script or
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import sys
 import urllib.parse
@@ -192,7 +193,9 @@ def _render_event(event: dict) -> None:
 @app.command()
 def recon(
     ctx: typer.Context,
-    domain: str = typer.Argument(..., help="Seed domain, e.g. example.com."),
+    domain: str = typer.Argument(
+        ..., help="Seed: a domain (example.com), an IP (10.0.0.5), or a CIDR (10.0.0.0/24)."
+    ),
     program: Optional[str] = typer.Option(
         None, "--program", "-p", help="Workspace to use (default: the domain)."
     ),
@@ -209,13 +212,24 @@ def recon(
         False, "--no-cache", help="Bypass the tool-output cache for this run."
     ),
 ) -> None:
-    """Run the recon pipeline: subdomains -> resolve -> live -> ports -> urls."""
+    """Run the recon pipeline over a domain, IP, or CIDR seed.
+
+    A domain runs the full chain (subdomains -> resolve -> live -> ports ->
+    urls); an IP or CIDR skips the subdomain/DNS phase and runs live -> ports
+    -> urls over the address range.
+    """
     app_ctx = ctx.obj
-    try:
-        domain = v.normalise_domain(domain)
-    except v.ValidationError:
-        term.error(f"not a valid domain: {domain}")
-        raise typer.Exit(2) from None
+    kind = v.seed_kind(domain)
+    if kind in ("ip", "cidr"):
+        domain = domain.strip().lower()
+    else:
+        # anything else is treated as a domain/URL and normalised to a host
+        try:
+            domain = v.normalise_domain(domain)
+            kind = "domain"
+        except v.ValidationError:
+            term.error(f"not a valid seed: {domain} (expected a domain, IP, or CIDR)")
+            raise typer.Exit(2) from None
 
     if stage != "all" and stage not in RECON_STAGES:
         term.error(f"unknown stage: {stage} (choose all/{'/'.join(RECON_STAGES)})")
@@ -225,14 +239,21 @@ def recon(
     ws = Workspace.open(program, config=app_ctx.config, base=app_ctx.base)
 
     if ws.has_scope():
-        if not ws.in_scope(domain):
+        in_scope = ws.network_in_scope(domain) if kind != "domain" else ws.in_scope(domain)
+        if not in_scope:
             term.error(f"{domain} is out of scope for '{program}'.")
             term.info(f"add it:  huntkit init {program} -s {domain}")
             raise typer.Exit(2)
     else:
-        # bound an un-scoped run to the target's own tree, and say so
-        ws.set_scope([f"*.{domain}"], [])
-        term.warn(f"no scope set — limiting to *.{domain}. Refine with `huntkit init`.")
+        # bound an un-scoped run to the seed itself, and say so
+        seed_scope = domain if kind != "domain" else f"*.{domain}"
+        ws.set_scope([seed_scope], [])
+        term.warn(f"no scope set — limiting to {seed_scope}. Refine with `huntkit init`.")
+
+    if kind == "cidr":
+        size = ipaddress.ip_network(domain, strict=False).num_addresses
+        if size > 65536:  # bigger than a /16 (v4)
+            term.warn(f"large range: {size} addresses — expect a slow, noisy run.")
 
     if fresh:
         ws.state.reset()
