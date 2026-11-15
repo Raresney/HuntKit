@@ -1,0 +1,38 @@
+# Example consumer workflow — NOT run by HuntKit itself.
+# Copy this into your own repository's .github/workflows/ to run a HuntKit
+# recon + scan sweep on a schedule and surface the findings in the GitHub
+# Security tab (Code scanning).
+#
+# Only point it at assets you are authorised to test.
+
+name: HuntKit recon
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # every Monday 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Domain, IP, or CIDR to sweep"
+        required: true
+
+permissions:
+  security-events: write # required to upload SARIF
+  contents: read
+
+jobs:
+  recon:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run HuntKit
+        id: hunt
+        uses: Raresney/HuntKit@v1
+        with:
+          target: ${{ github.event.inputs.target || 'example.com' }}
+          scope: "*.example.com"
+
+      - name: Upload SARIF to code scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.hunt.outputs.sarif }}
+          category: huntkit
