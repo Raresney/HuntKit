@@ -121,6 +121,30 @@ def test_recon_normalises_url(home):
     assert "example.com" in result.stdout
 
 
+def test_recon_accepts_cidr_seed(home):
+    runner.invoke(app, ["init", "net", "-s", "10.0.0.0/24"])
+    result = runner.invoke(app, ["recon", "10.0.0.0/24", "-p", "net"])
+    assert result.exit_code == 0
+    # the CIDR seeds the resolved set, not the subdomain set
+    resolved = (home / "net" / "recon" / "resolved.txt").read_text().strip()
+    assert resolved == "10.0.0.0/24"
+    # the subdomain phase never ran, so its file was never written
+    assert not (home / "net" / "recon" / "subdomains.txt").exists()
+
+
+def test_recon_rejects_out_of_scope_cidr(home):
+    runner.invoke(app, ["init", "net", "-s", "10.0.0.0/24"])
+    result = runner.invoke(app, ["recon", "192.168.0.0/24", "-p", "net"])
+    assert result.exit_code == 2
+
+
+def test_recon_warns_on_large_range(home):
+    runner.invoke(app, ["init", "big", "-s", "10.0.0.0/8"])
+    result = runner.invoke(app, ["recon", "10.0.0.0/8", "-p", "big"])
+    assert result.exit_code == 0
+    assert "large range" in result.stdout
+
+
 def test_workspace_list_and_show(home):
     runner.invoke(app, ["init", "acme", "-s", "example.com"])
     listed = runner.invoke(app, ["workspace", "list"])

@@ -110,6 +110,26 @@ class Workspace:
     def filter_scope(self, hosts: list[str]) -> list[str]:
         return [h for h in hosts if self.in_scope(h)]
 
+    def network_in_scope(self, cidr: str) -> bool:
+        """True if an IP/CIDR seed is authorised by the program scope.
+
+        A seed network is in scope when no out-of-scope network overlaps it
+        and, if any IP/CIDR in-scope entry exists, the seed falls entirely
+        inside one — so a range seed can never reach beyond what scope allows.
+        With no in-scope entries at all, everything not excluded is in scope.
+        """
+        net = _as_network(cidr)
+        if net is None:
+            return False
+        for p in self.scope_out:
+            other = _as_network(p)
+            if other is not None and other.version == net.version and net.overlaps(other):
+                return False
+        nets = [n for n in (_as_network(p) for p in self.scope_in) if n is not None]
+        if not self.scope_in:
+            return True
+        return any(_covers(n, net) for n in nets)
+
     # ---- deduped result sets --------------------------------------------
     def append_unique(self, relpath: str, items: list[str]) -> int:
         """Merge items into a result file, sorted & unique; return new count."""
@@ -131,6 +151,37 @@ class Workspace:
 # --------------------------------------------------------------------------
 # Helpers
 # --------------------------------------------------------------------------
+def _as_network(value: str) -> ipaddress.IPv4Network | ipaddress.IPv6Network | None:
+    """Parse a scope entry as an IP network, or None if it is not one."""
+    value = value.strip()
+    if "/" not in value and not _looks_like_ip(value):
+        return None
+    try:
+        return ipaddress.ip_network(value, strict=False)
+    except ValueError:
+        return None
+
+
+def _looks_like_ip(value: str) -> bool:
+    try:
+        ipaddress.ip_address(value.strip())
+        return True
+    except ValueError:
+        return False
+
+
+def _covers(
+    outer: ipaddress.IPv4Network | ipaddress.IPv6Network,
+    inner: ipaddress.IPv4Network | ipaddress.IPv6Network,
+) -> bool:
+    """True if network ``inner`` lies entirely within network ``outer``."""
+    if outer.version != inner.version:
+        return False
+    return int(outer.network_address) <= int(inner.network_address) and int(
+        inner.broadcast_address
+    ) <= int(outer.broadcast_address)
+
+
 def _match(host: str, pattern: str) -> bool:
     host = host.lower().strip()
     pattern = pattern.lower().strip()

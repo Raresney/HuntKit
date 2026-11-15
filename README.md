@@ -39,7 +39,8 @@ vulnerable test site. The step-by-step walkthrough with real output is in
 
 - **Parallel, resumable recon pipeline.** `subdomains → resolve → live → ports → urls`,
   running every available tool in each wave at once, deduped on disk, with
-  stage resume and an opt-in content-addressed cache.
+  stage resume and an opt-in content-addressed cache. Seed it with a domain,
+  or an IP/CIDR to scan an address range (the subdomain/DNS phase is skipped).
 - **Pluggable toolchain.** Each external tool is one file in `huntkit/plugins/`.
   Adding a tool means dropping in a file; the pipeline wires it in by capability.
 - **Active scanning.** `scan` drives the vuln/fuzz plugins (nuclei, dalfox, and
@@ -183,7 +184,7 @@ With a single workspace, `-p` is inferred.
 | --- | --- |
 | `doctor` | Show which external tools are installed / missing, and where data lives. |
 | `init <program> -s <scope>` | Create a workspace and set in/out scope (`*.wildcards` ok). |
-| `recon <domain> [--stage] [--threads] [--fresh] [--no-cache]` | Parallel, resumable recon pipeline. |
+| `recon <domain\|ip\|cidr> [--stage] [--threads] [--fresh] [--no-cache]` | Parallel, resumable recon pipeline. An IP/CIDR seed skips the subdomain phase. |
 | `scan -p <program> [--tool] [--threads] [--no-cache] [--nuclei-arg]` | Run the vuln/fuzz scanners (nuclei, dalfox) over the gathered in-scope URLs. `-N` passes extra args through to nuclei. |
 | `enrich -p <program> [--favicon/--no-favicon] [--asn/--no-asn]` | Favicon hashes (Shodan pivot) + ASN/BGP origin per host. |
 | `shots -p <program>` | Screenshot every live in-scope URL (gowitness) for the report gallery. |
