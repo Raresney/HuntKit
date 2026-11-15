@@ -535,7 +535,11 @@ def report(
     if not rep.has_data:
         term.warn(f"nothing to report for '{program}' — no recon gathered yet.")
         term.info(f"run:  huntkit recon <domain> -p {program}")
-        raise typer.Exit(0)
+        # Machine formats (json/sarif) still write an empty-but-valid file so a
+        # CI pipeline that ingests them (e.g. SARIF upload) never breaks on a
+        # missing artifact; human formats just bail.
+        if canonical not in ("json", "sarif"):
+            raise typer.Exit(0)
 
     written = report_write(ws, rep, canonical, out)
 

@@ -1,0 +1,68 @@
+name: "HuntKit Recon"
+description: "Run a HuntKit recon + scan sweep in the full-toolchain container and emit a SARIF report for code scanning."
+author: "Raresney"
+branding:
+  icon: "search"
+  color: "green"
+
+inputs:
+  target:
+    description: "Domain, IP, or CIDR to seed recon from."
+    required: true
+  scope:
+    description: "In-scope pattern (domain / IP / CIDR / *.wildcard). Defaults to the target."
+    required: false
+    default: ""
+  program:
+    description: "Workspace name for this sweep."
+    required: false
+    default: "ci"
+  scan:
+    description: "Run the active scan phase (nuclei/dalfox) after recon."
+    required: false
+    default: "true"
+  image:
+    description: "HuntKit container image to run (ships the full tool chain)."
+    required: false
+    default: "ghcr.io/raresney/huntkit:latest"
+  output:
+    description: "SARIF file to write, relative to the workspace."
+    required: false
+    default: "huntkit.sarif"
+
+outputs:
+  sarif:
+    description: "Path to the generated SARIF file (relative to the workspace)."
+    value: ${{ steps.run.outputs.sarif }}
+
+runs:
+  using: "composite"
+  steps:
+    - id: run
+      shell: bash
+      env:
+        HK_TARGET: ${{ inputs.target }}
+        HK_SCOPE: ${{ inputs.scope }}
+        HK_PROGRAM: ${{ inputs.program }}
+        HK_SCAN: ${{ inputs.scan }}
+        HK_IMAGE: ${{ inputs.image }}
+        HK_OUT: ${{ inputs.output }}
+      run: |
+        set -euo pipefail
+        scope="${HK_SCOPE:-$HK_TARGET}"
+        : "${scope:=$HK_TARGET}"
+        # Inputs cross into the container as env vars (never interpolated into
+        # the shell), so a crafted target/scope can't break out of the command.
+        docker run --rm \
+          -e HK_TARGET -e HK_SCOPE="$scope" -e HK_PROGRAM -e HK_SCAN -e HK_OUT \
+          -v "$GITHUB_WORKSPACE:/work" -w /work \
+          --entrypoint sh \
+          "$HK_IMAGE" -ec '
+            huntkit init "$HK_PROGRAM" -s "$HK_SCOPE"
+            huntkit recon "$HK_TARGET" -p "$HK_PROGRAM"
+            if [ "$HK_SCAN" = "true" ]; then
+              huntkit scan -p "$HK_PROGRAM" || true
+            fi
+            huntkit report -p "$HK_PROGRAM" -f sarif -o "/work/$HK_OUT"
+          '
+        echo "sarif=$HK_OUT" >> "$GITHUB_OUTPUT"

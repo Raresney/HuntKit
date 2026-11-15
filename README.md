@@ -138,6 +138,35 @@ docker run --rm -v "$PWD/hk-data:/data" \
 Engagement data lives in the `/data` volume (`HUNTKIT_HOME`); mount a host
 directory to keep it between runs. The image never bakes in a workspace.
 
+### GitHub Action: scheduled recon → Security tab
+
+HuntKit ships a composite Action (`action.yml`) that runs a full sweep in the
+toolchain container and writes a SARIF report. Pair it with
+`github/codeql-action/upload-sarif` and the findings land in your repo's
+**Security → Code scanning** view — scheduled recon with zero glue:
+
+```yaml
+permissions:
+  security-events: write
+  contents: read
+
+steps:
+  - uses: Raresney/HuntKit@v1
+    id: hunt
+    with:
+      target: example.com     # domain, IP, or CIDR — authorised assets only
+      scope: "*.example.com"  # defaults to the target
+  - uses: github/codeql-action/upload-sarif@v3
+    with:
+      sarif_file: ${{ steps.hunt.outputs.sarif }}
+      category: huntkit
+```
+
+Inputs: `target` (required), `scope`, `program`, `scan` (run nuclei/dalfox,
+default `true`), `image`, `output`. A sweep that finds nothing still emits a
+valid, empty SARIF, so the upload never breaks the run. A copy-paste workflow
+lives in [`examples/code-scanning.yml`](examples/code-scanning.yml).
+
 ---
 
 ## Quick start
