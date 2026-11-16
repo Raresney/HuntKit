@@ -12,7 +12,7 @@
   <g>
     <!-- doctor -->
     <text x="20" y="68"><tspan fill="#3fb950">$</tspan> <tspan fill="#c9d1d9">huntkit doctor</tspan></text>
-    <text x="20" y="92" fill="#8b949e">  HuntKit <tspan fill="#58a6ff">0.3.0</tspan>  ·  data: ~/.huntkit</text>
+    <text x="20" y="92" fill="#8b949e">  HuntKit <tspan fill="#58a6ff">0.4.0</tspan>  ·  data: ~/.huntkit</text>
     <text x="20" y="114" fill="#8b949e">  <tspan fill="#3fb950">✓</tspan> subfinder  <tspan fill="#3fb950">✓</tspan> httpx  <tspan fill="#3fb950">✓</tspan> naabu  <tspan fill="#3fb950">✓</tspan> nuclei  <tspan fill="#3fb950">✓</tspan> gowitness   <tspan fill="#c9d1d9">16/18 tools</tspan></text>
 
     <!-- scope guard -->

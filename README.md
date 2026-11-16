@@ -6,7 +6,7 @@
 ![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen)
 [![PyPI](https://img.shields.io/pypi/v/huntkit)](https://pypi.org/project/huntkit/)
 [![GHCR](https://img.shields.io/badge/ghcr.io-huntkit-2496ED?logo=docker&logoColor=white)](https://github.com/Raresney/HuntKit/pkgs/container/huntkit)
-![Release](https://img.shields.io/badge/release-v0.3.0-blue)
+![Release](https://img.shields.io/badge/release-v0.4.0-blue)
 
 **Local-first bug-bounty recon, methodology & workflow framework for _authorised_ testing.**
 
@@ -341,7 +341,7 @@ implementation, under this repository's MIT license with attribution.
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md). Current release: **v0.3.0**.
+See [CHANGELOG.md](CHANGELOG.md). Current release: **v0.4.0**.
 
 ---
 

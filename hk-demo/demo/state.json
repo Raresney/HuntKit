@@ -1,0 +1,99 @@
+{
+  "created": 1794343896.2159698,
+  "updated": 1794346939.7912972,
+  "counts": {
+    "subdomains": 1,
+    "resolved": 1,
+    "live": 1,
+    "open_ports": 28,
+    "urls": 4050,
+    "findings": 0
+  },
+  "stages": {
+    "subs": {
+      "name": "subs",
+      "status": "done",
+      "started": 1794343896.4383142,
+      "finished": 1794343950.4757555,
+      "error": null,
+      "meta": {
+        "new": 0,
+        "total": 1,
+        "fallback": false
+      }
+    },
+    "resolve": {
+      "name": "resolve",
+      "status": "done",
+      "started": 1794343950.5041084,
+      "finished": 1794343951.3185112,
+      "error": null,
+      "meta": {
+        "new": 1,
+        "total": 1,
+        "fallback": false
+      }
+    },
+    "live": {
+      "name": "live",
+      "status": "done",
+      "started": 1794343951.3465781,
+      "finished": 1794343958.5196705,
+      "error": null,
+      "meta": {
+        "new": 1,
+        "total": 1,
+        "fallback": false
+      }
+    },
+    "ports": {
+      "name": "ports",
+      "status": "done",
+      "started": 1794343951.4480536,
+      "finished": 1794343958.6885111,
+      "error": null,
+      "meta": {
+        "new": 28,
+        "total": 28,
+        "fallback": false
+      }
+    },
+    "urls": {
+      "name": "urls",
+      "status": "done",
+      "started": 1794343958.7499585,
+      "finished": 1794344036.6024227,
+      "error": null,
+      "meta": {
+        "new": 4050,
+        "total": 4050,
+        "fallback": false
+      }
+    },
+    "shots": {
+      "name": "shots",
+      "status": "done",
+      "started": 1794344367.0621798,
+      "finished": 1794344969.9819603,
+      "error": null,
+      "meta": {
+        "targets": 122,
+        "captured": 14
+      }
+    },
+    "scan": {
+      "name": "scan",
+      "status": "done",
+      "started": 1794346618.82049,
+      "finished": 1794346939.7912765,
+      "error": null,
+      "meta": {
+        "targets": 122,
+        "findings": 0,
+        "ran": [
+          "nuclei"
+        ]
+      }
+    }
+  }
+}

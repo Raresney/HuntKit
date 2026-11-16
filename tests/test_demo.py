@@ -36,7 +36,7 @@ def test_demo_shows_the_headline_commands() -> None:
     text = DEMO.read_text(encoding="utf-8")
     for cmd in ("recon", "scan", "analyze", "report", "monitor", "dashboard"):
         assert cmd in text, f"demo omits {cmd}"
-    assert "0.3.0" in text
+    assert "0.4.0" in text
 
 
 def test_readme_embeds_the_demo() -> None:

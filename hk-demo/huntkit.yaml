@@ -1,0 +1,10 @@
+general:
+  threads: 40
+  rate: 300
+  timeout: 1800
+  retry: 2
+
+tools:
+  nuclei:
+    enabled: true
+    timeout: 1800
