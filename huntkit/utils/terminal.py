@@ -21,7 +21,8 @@ from rich.theme import Theme
 for _stream in (sys.stdout, sys.stderr):
     try:  # pragma: no cover - platform dependent
         _stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
-    except Exception:
+    # best-effort console encoding; swallowing failure is intentional and non-fatal
+    except Exception:  # nosec B110
         pass
 
 HUNTKIT_THEME = Theme(

@@ -72,6 +72,18 @@ warn_redundant_casts = true
 ignore_missing_imports = true
 check_untyped_defs = true
 
+[tool.bandit]
+# HuntKit's whole job is to orchestrate other CLIs (subfinder, httpx, nuclei, …),
+# so these three findings are inherent to the design, not defects:
+#   B404 — importing subprocess (the orchestration layer lives on it)
+#   B603 — subprocess call without shell=True; argv is always a list, never a
+#          shell string, so there is no shell-injection surface to flag
+#   B607 — tools are invoked by name and resolved from PATH on purpose (the
+#          operator installs the recon tool chain; see huntkit/utils/process.py)
+# Everything else stays on, including shell=True (B602), eval, weak crypto, and
+# hardcoded-secret checks.
+skips = ["B404", "B603", "B607"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"

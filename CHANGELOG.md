@@ -10,6 +10,15 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Community health docs: `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`,
   and GitHub issue / pull-request templates.
+- Self-security CI: a `security` job runs `bandit` (static analysis) and
+  `pip-audit` (dependency CVE audit) over HuntKit's own code on every push and
+  pull request.
+
+### Security
+
+- Hardened the AI provider HTTP path with a scheme guard that refuses any
+  non-`http(s)` endpoint before `urllib` opens it, matching the guards already
+  on the enrich and webhook fetchers.
 
 ## [0.4.0] - 2026-11-16
 

@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import os
 import urllib.error
+import urllib.parse
 import urllib.request
 
 from ..core.config import Config
@@ -28,6 +29,12 @@ def _post_json(url: str, headers: dict[str, str], payload: dict, timeout: int) -
 
     Kept module-level so tests can stub the whole network round-trip.
     """
+    # Scheme guard: a provider endpoint is always http(s). Refuse file:// and
+    # other schemes so a mis-set endpoint can never make urlopen read a local
+    # file or reach a custom-scheme handler.
+    scheme = urllib.parse.urlsplit(url).scheme.lower()
+    if scheme not in ("http", "https"):
+        raise ProviderError(f"refusing non-http(s) provider URL (scheme: {scheme or 'none'})")
     body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
         url,
@@ -36,7 +43,8 @@ def _post_json(url: str, headers: dict[str, str], payload: dict, timeout: int) -
         headers={"content-type": "application/json", **headers},
     )
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        # scheme guarded to http(s) above
+        with urllib.request.urlopen(req, timeout=timeout) as resp:  # nosec B310
             return json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         detail = e.read().decode("utf-8", "replace")[:400]
