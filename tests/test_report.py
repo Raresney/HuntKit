@@ -43,6 +43,7 @@ class TestFormats:
         assert normalise_format("markdown") == "md"
         assert normalise_format(" HTM ") == "html"
         assert normalise_format("json") == "json"
+        assert normalise_format(" SARIF ") == "sarif"
         assert normalise_format("pdf") == "pdf"
         assert normalise_format("xml") is None
 
@@ -130,10 +131,52 @@ class TestJson:
 
 
 # ---------------------------------------------------------------------------
+# sarif
+# ---------------------------------------------------------------------------
+class TestSarif:
+    def test_valid_shape_and_findings(self, tmp_path):
+        rep = build(_seed(tmp_path))
+        doc = json.loads(render.to_sarif(rep))
+        assert doc["version"] == "2.1.0"
+        assert "sarif-2.1.0" in doc["$schema"]
+        run = doc["runs"][0]
+        driver = run["tool"]["driver"]
+        assert driver["name"] == "HuntKit" and driver["version"]
+        # one result per signal, one rule per distinct signal id
+        assert len(run["results"]) == len(rep.intel.signals)
+        rule_ids = [r["id"] for r in driver["rules"]]
+        assert len(rule_ids) == len(set(rule_ids))  # deduped
+        assert set(rule_ids) == {s.id for s in rep.intel.signals}
+
+    def test_result_maps_severity_and_location(self, tmp_path):
+        doc = json.loads(render.to_sarif(build(_seed(tmp_path))))
+        run = doc["runs"][0]
+        # redis on admin.example.com is Critical -> error level
+        redis = next(r for r in run["results"] if r["ruleId"] == "redis-open")
+        assert redis["level"] == "error"
+        loc = redis["locations"][0]["physicalLocation"]["artifactLocation"]["uri"]
+        assert loc == "admin.example.com"
+        assert redis["partialFingerprints"]["huntkitSignal/v1"]
+        assert redis["properties"]["severity"] == "critical"
+        # the rule carries a GitHub security-severity score
+        rule = next(r for r in run["tool"]["driver"]["rules"] if r["id"] == "redis-open")
+        assert rule["defaultConfiguration"]["level"] == "error"
+        assert rule["properties"]["security-severity"] == "9.0"
+
+    def test_empty_workspace_is_still_valid(self, tmp_path):
+        doc = json.loads(render.to_sarif(build(Workspace.open("empty", base=tmp_path))))
+        run = doc["runs"][0]
+        assert run["results"] == [] and run["tool"]["driver"]["rules"] == []
+
+
+# ---------------------------------------------------------------------------
 # write
 # ---------------------------------------------------------------------------
 class TestWrite:
-    @pytest.mark.parametrize("fmt,ext", [("md", "md"), ("html", "html"), ("json", "json")])
+    @pytest.mark.parametrize(
+        "fmt,ext",
+        [("md", "md"), ("html", "html"), ("json", "json"), ("sarif", "sarif")],
+    )
     def test_write_lands_in_reports(self, tmp_path, fmt, ext):
         ws = _seed(tmp_path)
         w = write(ws, build(ws), fmt)
@@ -186,6 +229,16 @@ class TestCli:
         result = runner.invoke(app, ["report", "-p", "acme", "-f", "html"])
         assert result.exit_code == 0
         assert list((home / "acme" / "reports").glob("*.html"))
+
+    def test_sarif_format(self, home):
+        runner.invoke(app, ["init", "acme", "-s", "*.example.com"])
+        _seed(home)
+        result = runner.invoke(app, ["report", "-p", "acme", "-f", "sarif"])
+        assert result.exit_code == 0
+        files = list((home / "acme" / "reports").glob("*.sarif"))
+        assert files
+        doc = json.loads(files[0].read_text(encoding="utf-8"))
+        assert doc["version"] == "2.1.0" and doc["runs"][0]["results"]
 
     def test_unknown_format_exits_2(self, home):
         runner.invoke(app, ["init", "acme", "-s", "example.com"])

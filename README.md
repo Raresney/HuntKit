@@ -53,8 +53,9 @@ vulnerable test site. The step-by-step walkthrough with real output is in
   target.
 - **Knowledge base.** Full playbooks for 9 bug classes (detection, payloads,
   bypasses, tools, references), cross-linked from the attack paths.
-- **Reporting.** One model rendered to Markdown, a self-contained HTML page, or
-  JSON (PDF when `weasyprint` is present, otherwise print-ready HTML).
+- **Reporting.** One model rendered to Markdown, a self-contained HTML page,
+  JSON, or SARIF 2.1.0 for GitHub code scanning / CI (PDF when `weasyprint` is
+  present, otherwise print-ready HTML).
 - **AI advisor (optional).** Hand the scored surface to a local Ollama model, or
   to a cloud model (Claude/OpenAI) only after an approval prompt that shows
   exactly what will be sent.
@@ -190,7 +191,7 @@ With a single workspace, `-p` is inferred.
 | `shots -p <program>` | Screenshot every live in-scope URL (gowitness) for the report gallery. |
 | `analyze -p <program>` | Score hosts Low→Critical and roll signals into attack paths. |
 | `playbook [<id>] [--md]` | List the bug-class knowledge base, or render one playbook. |
-| `report -p <program> [-f md\|html\|json\|pdf]` | Write an engagement report. |
+| `report -p <program> [-f md\|html\|json\|sarif\|pdf]` | Write an engagement report. `-f sarif` emits SARIF 2.1.0 for GitHub code scanning / CI. |
 | `diff -p <program> [--save] [--against <id>] [--list]` | Snapshot the result set and show what changed since a baseline. |
 | `dashboard -p <program> [--watch <secs>]` | One-screen engagement overview; `--watch` redraws it live. |
 | `monitor <domain> -p <program> [--webhook <url>] [--notify-on findings\|changes] [--interval <min>]` | Re-sweep, diff vs. last snapshot, and webhook-notify on new findings. |
@@ -209,8 +210,8 @@ Bug classes: `idor`, `bac`, `xss`, `ssrf`, `sqli`, `ssti`, `subtakeover`,
 
 ```
 recon  ──▶  scan  ──▶  intel.analyze  ──▶  report  ──▶  advise
-(tools)    (nuclei/    (scores recon +     (md/html/json)  (LLM, gated)
-            dalfox)     scan findings →          │
+(tools)    (nuclei/    (scores recon +     (md/html/json   (LLM, gated)
+            dalfox)     scan findings →      /sarif)  │
                         attack paths)            │
                               └──────▶ knowledge playbooks (huntkit playbook <id>)
 
@@ -279,7 +280,7 @@ The framework is built around declarative catalogs:
 ├── scans/     intel.json, findings.json, enrich.json, screenshots.json …
 ├── notes/     your own notes
 ├── history/   timestamped result snapshots (for `diff`)
-├── reports/   generated md / html / json  (+ shots/ screenshots)
+├── reports/   generated md / html / json / sarif  (+ shots/ screenshots)
 └── state.json stage tracking + counts
 ```
 

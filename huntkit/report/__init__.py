@@ -21,13 +21,14 @@ from . import render
 from .builder import Report, Screenshot, build
 
 # Canonical output formats.
-FORMATS = ("md", "html", "json", "pdf")
+FORMATS = ("md", "html", "json", "sarif", "pdf")
 _ALIASES = {
     "md": "md",
     "markdown": "md",
     "html": "html",
     "htm": "html",
     "json": "json",
+    "sarif": "sarif",
     "pdf": "pdf",
 }
 
@@ -54,6 +55,7 @@ _RENDERERS = {
     "md": render.to_markdown,
     "html": render.to_html,
     "json": render.to_json,
+    "sarif": render.to_sarif,
 }
 
 
