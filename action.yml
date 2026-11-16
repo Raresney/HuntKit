@@ -64,5 +64,10 @@ runs:
               huntkit scan -p "$HK_PROGRAM" || true
             fi
             huntkit report -p "$HK_PROGRAM" -f sarif -o "/work/$HK_OUT"
+            # The container runs as root, so files it writes to the mounted
+            # workspace land root-owned (and, under a restrictive umask, not
+            # world-readable). Make the SARIF readable by the non-root runner
+            # user that the upload-sarif step runs as, or it fails with EACCES.
+            chmod a+r "/work/$HK_OUT"
           '
         echo "sarif=$HK_OUT" >> "$GITHUB_OUTPUT"
