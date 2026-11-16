@@ -1,0 +1,45 @@
+name: Feature request
+description: Suggest a capability or improvement for HuntKit.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        HuntKit keeps its surface small by adding features as **data, not branches**
+        where possible (a recon stage, a signal/playbook row, a report renderer).
+        See [Extending](https://github.com/Raresney/HuntKit#extending-add-a-row-not-a-branch).
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do that HuntKit makes hard or impossible today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you like HuntKit to do? A new flag, stage, report format, playbook?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you thought about, and why they fall short.
+    validations:
+      required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Recon pipeline
+        - Scanning
+        - Intel / scoring / playbooks
+        - Reporting (md/html/json/sarif/pdf)
+        - CI / GitHub Action / Docker
+        - CLI / UX
+        - Other
+    validations:
+      required: true

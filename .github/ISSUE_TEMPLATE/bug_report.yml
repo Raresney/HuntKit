@@ -1,0 +1,66 @@
+name: Bug report
+description: Something in HuntKit behaves incorrectly.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please do **not** report security issues here —
+        follow the [Security Policy](https://github.com/Raresney/HuntKit/blob/main/SECURITY.md) instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you run, and what did HuntKit do?
+      placeholder: "`huntkit report -p acme -f sarif` wrote an empty file even though recon found hosts."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: What should have happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The exact commands, in order. Redact any real targets or secrets.
+      placeholder: |
+        1. huntkit init -p demo --scope '*.example.com'
+        2. huntkit recon example.com -p demo
+        3. huntkit report -p demo -f sarif -o out.sarif
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: HuntKit version
+      description: "Output of `huntkit --version` (or the commit SHA)."
+      placeholder: "0.4.0"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: OS and Python version
+      placeholder: "Ubuntu 24.04, Python 3.12 — or: Docker image ghcr.io/raresney/huntkit:latest"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant output
+      description: Error messages or logs. Scrub real hostnames, tokens, and personal data.
+      render: shell
+    validations:
+      required: false
+  - type: checkboxes
+    id: authorised
+    attributes:
+      label: Confirmation
+      options:
+        - label: This report does not contain data from systems I am not authorised to test.
+          required: true

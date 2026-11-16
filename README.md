@@ -5,6 +5,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen)
 [![PyPI](https://img.shields.io/pypi/v/huntkit)](https://pypi.org/project/huntkit/)
+[![Downloads](https://img.shields.io/pypi/dm/huntkit)](https://pypi.org/project/huntkit/)
 [![GHCR](https://img.shields.io/badge/ghcr.io-huntkit-2496ED?logo=docker&logoColor=white)](https://github.com/Raresney/HuntKit/pkgs/container/huntkit)
 ![Release](https://img.shields.io/badge/release-v0.4.0-blue)
 
@@ -328,6 +329,19 @@ pytest --cov=huntkit         # tests (92% coverage, gate at 90%)
 ```
 
 CI runs lint, format-check, type-check and tests on Python 3.10 to 3.13.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, conventions, and how to open a
+pull request.
+
+---
+
+## Contributing & security
+
+- **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md) — dev setup, the checks CI
+  runs, and the "add a row, not a branch" design convention.
+- **Reporting a vulnerability:** [SECURITY.md](SECURITY.md) — report privately,
+  not in a public issue.
+- **Community standards:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
 ---
 
