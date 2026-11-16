@@ -67,7 +67,7 @@ def default_fetch(url: str) -> bytes:
     if urlparse(url).scheme not in ("http", "https"):
         raise ValueError("only http(s) favicons are fetched")
     req = urllib.request.Request(url, headers={"User-Agent": _UA})  # noqa: S310 — http(s) only
-    with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT) as resp:  # noqa: S310
+    with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT) as resp:  # noqa: S310  # nosec B310
         if resp.status != 200:
             raise OSError(f"HTTP {resp.status}")
         return resp.read()

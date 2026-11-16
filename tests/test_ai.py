@@ -108,6 +108,13 @@ class TestRequestShapes:
         with pytest.raises(ProviderError):
             AnthropicProvider().complete("s", "u", model="m", config=Config())
 
+    @pytest.mark.parametrize("url", ["file:///etc/passwd", "gopher://x", "ftp://h/f"])
+    def test_post_json_refuses_non_http_scheme(self, url):
+        # the sink-level scheme guard must reject anything but http(s) before
+        # urlopen is reached, so a mis-set endpoint can't read a local file.
+        with pytest.raises(ProviderError, match="non-http"):
+            providers._post_json(url, {}, {"x": 1}, timeout=5)
+
 
 # ---------------------------------------------------------------------------
 # advisor — context + the approval gate

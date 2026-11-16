@@ -61,7 +61,8 @@ def default_post(url: str, payload: dict) -> bool:
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
+        # scheme guarded to http(s) above
+        with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:  # nosec B310
             return 200 <= resp.status < 300
     except (urllib.error.URLError, OSError, ValueError):
         return False
