@@ -168,6 +168,14 @@ default `true`), `image`, `output`. A sweep that finds nothing still emits a
 valid, empty SARIF, so the upload never breaks the run. A copy-paste workflow
 lives in [`examples/code-scanning.yml`](examples/code-scanning.yml).
 
+**Worked example.** [docs/CASE_STUDY.md](docs/CASE_STUDY.md) walks a real run
+against `scanme.nmap.org` (Nmap's public, scan-authorised host) end to end —
+recon → six scored signals → the SARIF in the Security tab — with the actual
+artifact checked in at
+[`examples/scanme.nmap.org.sarif`](examples/scanme.nmap.org.sarif). The
+[`demo-scan` workflow](.github/workflows/demo-scan.yml) reproduces it in one
+click from the Actions tab.
+
 ---
 
 ## Quick start
