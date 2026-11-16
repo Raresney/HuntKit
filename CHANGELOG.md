@@ -4,6 +4,46 @@ All notable changes to HuntKit are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims
 to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-11-16
+
+### Added
+
+- **SARIF export** — `report -f sarif` emits a SARIF 2.1.0 document, so a
+  HuntKit sweep feeds straight into GitHub code scanning (the Security tab) or
+  any CI security dashboard. Each signal becomes a result located at the
+  affected host, with the severity driving both the SARIF level and GitHub's
+  `security-severity` score, and a stable fingerprint so a tracker can de-dupe
+  the same finding across repeated sweeps. An empty sweep still writes a valid,
+  empty document.
+- **Reusable GitHub Action** — a composite `action.yml` runs a recon + scan
+  sweep in the full-toolchain container image and writes a SARIF report. Pair
+  it with `github/codeql-action/upload-sarif` for scheduled recon that lands in
+  the Security tab with no glue code; a copy-paste workflow lives in
+  `examples/code-scanning.yml`. Inputs cross into the container as environment
+  variables rather than being interpolated into the shell.
+- **IP / CIDR recon seeds** — `recon <ip|cidr>` seeds the pipeline from an
+  address or range, not just a domain. The subdomain phase is skipped and the
+  live/ports/urls stages run over the range (the tools expand a CIDR natively).
+  A seed must fall inside the authorised scope and may not overlap an excluded
+  range; ranges wider than `/16` are warned about.
+- **nuclei passthrough** — `scan -N/--nuclei-arg` forwards extra arguments to
+  nuclei for one run (e.g. `-N -system-resolvers`), derived onto a config copy
+  so the shared config is untouched. A zero-findings diagnostic explains
+  nuclei's default `info`-severity exclusion and its own DNS resolver when a
+  scan runs over real targets but reports nothing.
+
+### Fixed
+
+- **CIDR scope matching** — a scope entry like `10.0.0.0/8` now matches an IP
+  inside it (it was string-compared and silently never matched).
+- **`doctor` workspace** — `doctor` reports the effective base, honouring
+  `-w/--workspace`, instead of the configured default.
+- **urls-stage scope filter** — the `urls` recon stage is now scope-filtered on
+  disk, so an excluded host can no longer leak into `urls/urls.txt` or reports.
+- **machine-format reports on empty sweeps** — `report -f json|sarif` writes a
+  valid, empty file instead of bailing before writing, so a CI pipeline that
+  ingests it never breaks on a missing artifact.
+
 ## [0.3.0] - 2026-10-29
 
 ### Added

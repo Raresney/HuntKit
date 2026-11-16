@@ -1,0 +1,81 @@
+{
+  "created": 1794347408.823827,
+  "updated": 1794347551.8349361,
+  "counts": {
+    "subdomains": 10,
+    "resolved": 10,
+    "live": 0,
+    "open_ports": 0,
+    "urls": 0
+  },
+  "stages": {
+    "subs": {
+      "name": "subs",
+      "status": "done",
+      "started": 1794347465.9272392,
+      "finished": 1794347527.0076125,
+      "error": null,
+      "meta": {
+        "new": 9,
+        "total": 10,
+        "fallback": false
+      }
+    },
+    "resolve": {
+      "name": "resolve",
+      "status": "done",
+      "started": 1794347527.0339267,
+      "finished": 1794347533.9625568,
+      "error": null,
+      "meta": {
+        "new": 0,
+        "total": 10,
+        "fallback": true
+      }
+    },
+    "live": {
+      "name": "live",
+      "status": "done",
+      "started": 1794347533.9837537,
+      "finished": 1794347551.0255451,
+      "error": null,
+      "meta": {
+        "new": 0,
+        "total": 0,
+        "fallback": false
+      }
+    },
+    "ports": {
+      "name": "ports",
+      "status": "done",
+      "started": 1794347534.078089,
+      "finished": 1794347551.1447253,
+      "error": null,
+      "meta": {
+        "new": 0,
+        "total": 0,
+        "fallback": false
+      }
+    },
+    "urls": {
+      "name": "urls",
+      "status": "done",
+      "started": 1794347551.1972566,
+      "finished": 1794347551.42411,
+      "error": null,
+      "meta": {
+        "new": 0,
+        "total": 0,
+        "fallback": false
+      }
+    },
+    "scan": {
+      "name": "scan",
+      "status": "skipped",
+      "started": 1794347551.8099427,
+      "finished": null,
+      "error": null,
+      "meta": {}
+    }
+  }
+}
