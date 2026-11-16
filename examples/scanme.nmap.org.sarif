@@ -1,0 +1,344 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "HuntKit",
+          "version": "0.4.0",
+          "informationUri": "https://github.com/Raresney/HuntKit",
+          "rules": [
+            {
+              "id": "ssh-open",
+              "name": "ssh-open",
+              "shortDescription": {
+                "text": "SSH exposed \u2014 version/CVE check"
+              },
+              "fullDescription": {
+                "text": "SSH exposed \u2014 version/CVE check"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "helpUri": "https://github.com/Raresney/HuntKit",
+              "properties": {
+                "tags": [
+                  "port"
+                ],
+                "security-severity": "1.0"
+              }
+            },
+            {
+              "id": "svn-exposed",
+              "name": "svn-exposed",
+              "shortDescription": {
+                "text": "Exposed .svn directory"
+              },
+              "fullDescription": {
+                "text": "Exposed .svn directory"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://github.com/Raresney/HuntKit",
+              "properties": {
+                "tags": [
+                  "path"
+                ],
+                "security-severity": "7.0"
+              }
+            },
+            {
+              "id": "admin-panel",
+              "name": "admin-panel",
+              "shortDescription": {
+                "text": "Admin path \u2014 privileged surface"
+              },
+              "fullDescription": {
+                "text": "Admin path \u2014 privileged surface"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "helpUri": "https://github.com/Raresney/HuntKit",
+              "properties": {
+                "tags": [
+                  "path",
+                  "authn",
+                  "bac"
+                ],
+                "security-severity": "5.0"
+              }
+            },
+            {
+              "id": "joomla-admin",
+              "name": "joomla-admin",
+              "shortDescription": {
+                "text": "Joomla administrator panel"
+              },
+              "fullDescription": {
+                "text": "Joomla administrator panel"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "helpUri": "https://github.com/Raresney/HuntKit",
+              "properties": {
+                "tags": [
+                  "path",
+                  "authn",
+                  "bac"
+                ],
+                "security-severity": "5.0"
+              }
+            },
+            {
+              "id": "apache-status",
+              "name": "apache-status",
+              "shortDescription": {
+                "text": "Apache server-status \u2014 request/IP leak"
+              },
+              "fullDescription": {
+                "text": "Apache server-status \u2014 request/IP leak"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "helpUri": "https://github.com/Raresney/HuntKit",
+              "properties": {
+                "tags": [
+                  "path"
+                ],
+                "security-severity": "5.0"
+              }
+            },
+            {
+              "id": "lfi-param",
+              "name": "lfi-param",
+              "shortDescription": {
+                "text": "File/template parameter \u2014 test LFI/traversal & SSTI"
+              },
+              "fullDescription": {
+                "text": "File/template parameter \u2014 test LFI/traversal & SSTI"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "helpUri": "https://github.com/Raresney/HuntKit",
+              "properties": {
+                "tags": [
+                  "param",
+                  "ssti"
+                ],
+                "security-severity": "5.0"
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "ssh-open",
+          "ruleIndex": 0,
+          "level": "note",
+          "message": {
+            "text": "SSH exposed \u2014 version/CVE check on scanme.nmap.org (scanme.nmap.org:22)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "scanme.nmap.org"
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "scanme.nmap.org",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "huntkitSignal/v1": "9f5363268e03173cdfbfdf916dfa99963caf55d7134e23c7774896bdcd4703d4"
+          },
+          "properties": {
+            "severity": "informational",
+            "category": "port",
+            "count": 1,
+            "playbooks": []
+          }
+        },
+        {
+          "ruleId": "svn-exposed",
+          "ruleIndex": 1,
+          "level": "error",
+          "message": {
+            "text": "Exposed .svn directory on scanme.nmap.org (http://scanme.nmap.org/.svn/) [+4 more]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "scanme.nmap.org"
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "scanme.nmap.org",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "huntkitSignal/v1": "f023d2baa5f3a306af84b3b424e4c61bbff5f41b1020d5461e9e4b4352d5beb5"
+          },
+          "properties": {
+            "severity": "high",
+            "category": "path",
+            "count": 5,
+            "playbooks": []
+          }
+        },
+        {
+          "ruleId": "admin-panel",
+          "ruleIndex": 2,
+          "level": "warning",
+          "message": {
+            "text": "Admin path \u2014 privileged surface on scanme.nmap.org (http://scanme.nmap.org/admin/account.html) [+4 more]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "scanme.nmap.org"
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "scanme.nmap.org",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "huntkitSignal/v1": "f57dd35c8bc18c12477807b9194541691d5dba4164c9ba5c49490e8ff11d1c1a"
+          },
+          "properties": {
+            "severity": "medium",
+            "category": "path",
+            "count": 5,
+            "playbooks": [
+              "authn",
+              "bac"
+            ]
+          }
+        },
+        {
+          "ruleId": "joomla-admin",
+          "ruleIndex": 3,
+          "level": "warning",
+          "message": {
+            "text": "Joomla administrator panel on scanme.nmap.org (http://scanme.nmap.org/administrator.cgi) [+2 more]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "scanme.nmap.org"
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "scanme.nmap.org",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "huntkitSignal/v1": "97f467829e1dbe7f6bdd0f404ddb1c86b18327b5e31cf92aa3883cec29a930b3"
+          },
+          "properties": {
+            "severity": "medium",
+            "category": "path",
+            "count": 3,
+            "playbooks": [
+              "authn",
+              "bac"
+            ]
+          }
+        },
+        {
+          "ruleId": "apache-status",
+          "ruleIndex": 4,
+          "level": "warning",
+          "message": {
+            "text": "Apache server-status \u2014 request/IP leak on scanme.nmap.org (http://scanme.nmap.org/server-status)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "scanme.nmap.org"
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "scanme.nmap.org",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "huntkitSignal/v1": "f82270ac61e1900676b97c3d79e78980d336e0710a235423c776101aca11dcc5"
+          },
+          "properties": {
+            "severity": "medium",
+            "category": "path",
+            "count": 1,
+            "playbooks": []
+          }
+        },
+        {
+          "ruleId": "lfi-param",
+          "ruleIndex": 5,
+          "level": "warning",
+          "message": {
+            "text": "File/template parameter \u2014 test LFI/traversal & SSTI on scanme.nmap.org (page= @ http://scanme.nmap.org/http://blog.taddong.com/2011/10/hacking-vulnerable-web-applications.htmlhttp://www.irongeek.com/i.php?page=security/deliberately-insecure-web-applications-for-learning-web-app-securityhttp://www.vulnhub.comhttp://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/iiiisin2.mspx?mfr=truehttp://faculty.cs.tamu.edu/guofei/sec_conf_stat.htmhttp://icsd.i2r.a-star.edu.sg/staff/jianying/conference-ranking.htmlhttp://en.wikipedia.org/wiki/Uniform_Resource_Locatorhttps://i.stack.imgur.com/JiJKp.jpg)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "scanme.nmap.org"
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "scanme.nmap.org",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "huntkitSignal/v1": "22ae5d740b9bc7f5a83a59c64830063ad87248d8a6b1a4fc9b33413be65901c1"
+          },
+          "properties": {
+            "severity": "medium",
+            "category": "param",
+            "count": 1,
+            "playbooks": [
+              "ssti"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

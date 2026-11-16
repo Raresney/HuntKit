@@ -1,0 +1,36 @@
+name: Demo scan → Security tab
+
+# Manual only. Runs the HuntKit Action in this repo against scanme.nmap.org —
+# Nmap's public host that explicitly authorises scanning — and uploads the
+# resulting SARIF to GitHub code scanning, so the findings show up under the
+# repository's Security ▸ Code scanning tab. This is the reproducible version
+# of docs/CASE_STUDY.md; trigger it from the Actions tab with "Run workflow".
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  demo:
+    name: recon scanme.nmap.org → SARIF
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run HuntKit (recon + intel)
+        id: huntkit
+        uses: ./ # the composite Action defined at the repo root (action.yml)
+        with:
+          target: scanme.nmap.org
+          # Recon + intel only — the host-/URL-level signals are what populate
+          # the Security tab; skipping the active scan keeps the demo quick.
+          scan: "false"
+          output: scanme.sarif
+
+      - name: Upload SARIF to code scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.huntkit.outputs.sarif }}
+          category: huntkit

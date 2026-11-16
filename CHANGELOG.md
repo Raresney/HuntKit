@@ -13,6 +13,10 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Self-security CI: a `security` job runs `bandit` (static analysis) and
   `pip-audit` (dependency CVE audit) over HuntKit's own code on every push and
   pull request.
+- Worked case study (`docs/CASE_STUDY.md`) of a real recon → SARIF →
+  Security-tab run against `scanme.nmap.org`, with the real SARIF artifact
+  (`examples/scanme.nmap.org.sarif`) and a one-click `demo-scan` workflow that
+  reproduces it.
 
 ### Security
 
