@@ -251,6 +251,18 @@ class TestCli:
         assert result.exit_code == 0
         assert "nothing to report" in result.stdout
 
+    def test_machine_format_writes_even_with_no_data(self, home):
+        # json/sarif still emit a valid, empty file so a CI upload never breaks
+        runner.invoke(app, ["init", "empty", "-s", "example.com"])
+        result = runner.invoke(app, ["report", "-p", "empty", "-f", "sarif"])
+        assert result.exit_code == 0
+        assert "nothing to report" in result.stdout
+        files = list((home / "empty" / "reports").glob("*.sarif"))
+        assert files
+        doc = json.loads(files[0].read_text(encoding="utf-8"))
+        assert doc["version"] == "2.1.0"
+        assert doc["runs"][0]["results"] == []
+
     def test_requires_program_when_ambiguous(self, home):
         result = runner.invoke(app, ["report"])
         assert result.exit_code == 2
