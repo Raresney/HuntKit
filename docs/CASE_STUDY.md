@@ -73,4 +73,10 @@ consumer pattern.
 This repository ships a one-click reproduction of exactly this case study:
 [`.github/workflows/demo-scan.yml`](../.github/workflows/demo-scan.yml). From the
 **Actions** tab, pick *Demo scan → Security tab* and **Run workflow**; when it
-finishes, the six findings above appear under **Security ▸ Code scanning**.
+finishes, the six findings above appear under **Security ▸ Code scanning**:
+
+![HuntKit's six findings in the GitHub code scanning tab](img/security-tab.png)
+
+Each alert is attributed to HuntKit, located at `scanme.nmap.org`, and bucketed
+by GitHub into High / Medium / Low from the SARIF severity — the same six
+signals, now triaged in the Security tab.
