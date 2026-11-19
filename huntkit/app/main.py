@@ -40,6 +40,7 @@ from ..tui import render_dashboard
 from ..utils import filesystem as fs
 from ..utils import terminal as term
 from ..utils import validators as v
+from ..verify.run import run_verify
 from .config_cmd import config_app
 from .context import AppContext
 from .plugins_cmd import plugins_app
@@ -212,6 +213,9 @@ def recon(
     no_cache: bool = typer.Option(
         False, "--no-cache", help="Bypass the tool-output cache for this run."
     ),
+    no_verify: bool = typer.Option(
+        False, "--no-verify", help="Skip the active verification pass after recon."
+    ),
 ) -> None:
     """Run the recon pipeline over a domain, IP, or CIDR seed.
 
@@ -275,6 +279,11 @@ def recon(
     )
     _print_summary(summary, ws)
 
+    if not no_verify:
+        term.step("verifying signals against the live surface")
+        probed = run_verify(ws, app_ctx.config)
+        term.ok(f"verified {probed} signal(s). Re-run `huntkit verify` to refresh.")
+
 
 def _pick_program(app_ctx: AppContext, default: str) -> str:
     """Reuse the only existing workspace if there is exactly one, else `default`."""
@@ -289,6 +298,30 @@ def _print_summary(summary: ReconSummary, ws: Workspace) -> None:
         rows.append((s.stage, str(s.new), str(s.total), tools))
     term.print_table("Recon summary", ["stage", "new", "total", "tools"], rows)
     term.ok(f"{summary.total_new} new assets. Files under {ws.root}")
+
+
+@app.command()
+def verify(
+    ctx: typer.Context,
+    program: Optional[str] = typer.Option(
+        None, "--program", "-p", help="Workspace to verify (default: the only one)."
+    ),
+) -> None:
+    """Confirm the workspace's signals with a bounded HTTP probe.
+
+    Each path/panel signal is checked against the live target behind the scope
+    guard; the result (confirmed, dead, or left unverified) is saved so the
+    reports and the SARIF can separate confirmed findings from leads.
+    """
+    app_ctx = ctx.obj
+    program = program or _pick_program(app_ctx, default="")
+    if not program:
+        term.error("no workspace to verify — pass -p <program>.")
+        raise typer.Exit(2)
+    ws = Workspace.open(program, config=app_ctx.config, base=app_ctx.base)
+    term.banner(f"verify  ->  {program}")
+    probed = run_verify(ws, app_ctx.config)
+    term.ok(f"verified {probed} signal(s). Results under {ws.root}")
 
 
 # --------------------------------------------------------------------------
