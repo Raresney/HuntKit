@@ -328,3 +328,32 @@ class TestCli:
         # no workspaces at all -> cannot guess one
         result = runner.invoke(app, ["analyze"])
         assert result.exit_code == 2
+
+
+# ---------------------------------------------------------------------------
+# verification state (Milestone A, Task 3)
+# ---------------------------------------------------------------------------
+class TestVerifyState:
+    def test_signal_defaults_to_unverified(self):
+        from huntkit.intel.signals import VerifyState
+
+        s = Signal("git-exposed", "t", Severity.HIGH, "path", "h", "e")
+        assert s.state is VerifyState.UNVERIFIED
+        assert s.to_dict()["state"] == "unverified"
+
+    def test_signal_carries_verified_state_and_evidence(self):
+        from huntkit.intel.signals import VerifyState
+
+        s = Signal(
+            "git-exposed",
+            "t",
+            Severity.HIGH,
+            "path",
+            "h",
+            "e",
+            state=VerifyState.CONFIRMED,
+            verified_evidence="200 ref: refs/",
+        )
+        d = s.to_dict()
+        assert d["state"] == "confirmed"
+        assert d["verified_evidence"] == "200 ref: refs/"
