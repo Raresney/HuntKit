@@ -21,6 +21,10 @@ inputs:
     description: "Run the active scan phase (nuclei/dalfox) after recon."
     required: false
     default: "true"
+  verify:
+    description: "Confirm signals with a bounded HTTP probe before reporting."
+    required: false
+    default: "true"
   image:
     description: "HuntKit container image to run (ships the full tool chain)."
     required: false
@@ -45,6 +49,7 @@ runs:
         HK_SCOPE: ${{ inputs.scope }}
         HK_PROGRAM: ${{ inputs.program }}
         HK_SCAN: ${{ inputs.scan }}
+        HK_VERIFY: ${{ inputs.verify }}
         HK_IMAGE: ${{ inputs.image }}
         HK_OUT: ${{ inputs.output }}
       run: |
@@ -54,12 +59,16 @@ runs:
         # Inputs cross into the container as env vars (never interpolated into
         # the shell), so a crafted target/scope can't break out of the command.
         docker run --rm \
-          -e HK_TARGET -e HK_SCOPE="$scope" -e HK_PROGRAM -e HK_SCAN -e HK_OUT \
+          -e HK_TARGET -e HK_SCOPE="$scope" -e HK_PROGRAM -e HK_SCAN -e HK_VERIFY -e HK_OUT \
           -v "$GITHUB_WORKSPACE:/work" -w /work \
           --entrypoint sh \
           "$HK_IMAGE" -ec '
             huntkit init "$HK_PROGRAM" -s "$HK_SCOPE"
-            huntkit recon "$HK_TARGET" -p "$HK_PROGRAM"
+            if [ "$HK_VERIFY" = "true" ]; then
+              huntkit recon "$HK_TARGET" -p "$HK_PROGRAM"
+            else
+              huntkit recon "$HK_TARGET" -p "$HK_PROGRAM" --no-verify
+            fi
             if [ "$HK_SCAN" = "true" ]; then
               huntkit scan -p "$HK_PROGRAM" || true
             fi

@@ -8,6 +8,12 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Active verification: a new `verify` phase probes each path/panel signal with a
+  bounded, scope-guarded HTTP request and marks it confirmed, dead, or
+  unverified. It runs by default after recon (disable with `--no-verify` or the
+  Action's `verify: false`). Scoring drops dead signals, the reports show the
+  state, and the SARIF omits dead findings so code scanning sees confirmed
+  exposures and leads, not phantom 404s.
 - Community health docs: `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`,
   and GitHub issue / pull-request templates.
 - Self-security CI: a `security` job runs `bandit` (static analysis) and
