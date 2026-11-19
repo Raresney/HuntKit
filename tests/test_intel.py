@@ -9,6 +9,7 @@ from huntkit.intel import (
     Priority,
     Severity,
     Signal,
+    VerifyState,
     analyze,
     save_report,
     scan_signals,
@@ -357,3 +358,41 @@ class TestVerifyState:
         d = s.to_dict()
         assert d["state"] == "confirmed"
         assert d["verified_evidence"] == "200 ref: refs/"
+
+
+class TestVerificationScoring:
+    @staticmethod
+    def _seed_single_git(tmp_path) -> Workspace:
+        ws = Workspace.open("vrfy", base=tmp_path)
+        ws.append_unique("recon/subdomains.txt", ["target.example.com"])
+        ws.append_unique("recon/live.txt", ["https://target.example.com"])
+        ws.append_unique("urls/urls.txt", ["https://target.example.com/.git/config"])
+        return ws
+
+    def test_unverified_git_signal_is_high(self, tmp_path):
+        report = analyze(self._seed_single_git(tmp_path))
+        assert report.hosts[0].priority is Priority.HIGH
+
+    def test_dead_signal_does_not_raise_priority(self, tmp_path):
+        from huntkit.verify.engine import VerifyResult
+        from huntkit.verify.store import save_results
+
+        ws = self._seed_single_git(tmp_path)
+        save_results(
+            ws,
+            {("target.example.com", "git-exposed"): VerifyResult(VerifyState.DEAD, "404")},
+        )
+        report = analyze(ws)
+        assert report.hosts[0].priority is Priority.LOW
+
+    def test_confirmed_signal_keeps_its_weight(self, tmp_path):
+        from huntkit.verify.engine import VerifyResult
+        from huntkit.verify.store import save_results
+
+        ws = self._seed_single_git(tmp_path)
+        save_results(
+            ws,
+            {("target.example.com", "git-exposed"): VerifyResult(VerifyState.CONFIRMED, "200")},
+        )
+        report = analyze(ws)
+        assert report.hosts[0].priority is Priority.HIGH
