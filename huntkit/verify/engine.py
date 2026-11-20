@@ -42,7 +42,8 @@ def base_for_host(live_urls: list[str]) -> dict[str, str]:
         if not host:
             continue
         scheme = parts.scheme.lower() if parts.scheme in ("http", "https") else "http"
-        origin = f"{scheme}://{host}"
+        authority = host + (f":{parts.port}" if parts.port else "")
+        origin = f"{scheme}://{authority}"
         if host not in bases or (scheme == "https" and bases[host].startswith("http://")):
             bases[host] = origin
     return bases
@@ -94,10 +95,14 @@ def verify_signals(
                 state = VerifyState.UNVERIFIED
             elif _matches_baseline(p, baseline):
                 state = VerifyState.DEAD
-            elif confirms(sig.id, p):
-                state = VerifyState.CONFIRMED
             else:
-                state = VerifyState.DEAD
+                verdict = confirms(sig.id, p)
+                if verdict is True:
+                    state = VerifyState.CONFIRMED
+                elif verdict is False:
+                    state = VerifyState.DEAD
+                else:  # inconclusive predicate: a lead, not a kill
+                    state = VerifyState.UNVERIFIED
             results[(host, sig.id)] = VerifyResult(state, _evidence(p))
             if delay > 0:
                 time.sleep(delay)

@@ -26,6 +26,27 @@ def test_base_for_host_prefers_https():
     assert bases["x"] == "http://x"
 
 
+def test_base_for_host_keeps_non_default_port():
+    bases = base_for_host(["https://app.example.com:8443/x", "http://h:8080/y"])
+    assert bases["app.example.com"] == "https://app.example.com:8443"
+    assert bases["h"] == "http://h:8080"
+
+
+def test_panel_200_non_baseline_is_unverified_not_confirmed():
+    def fake(u, **k):
+        if u.endswith("/admin"):
+            return Probe(u, 200, "welcome, please login", "text/html", 20)
+        return Probe(u, 404, "not found " + u, "text/html", 10)
+
+    out = verify_signals(
+        [_sig("admin-panel", Severity.MEDIUM)],
+        bases={"h": "http://h"},
+        in_scope=lambda h: True,
+        probe_fn=fake,
+    )
+    assert out[("h", "admin-panel")].state is VerifyState.UNVERIFIED
+
+
 def test_confirmed_when_predicate_matches():
     miss = Probe("", 404, "", "", 0)
     hit = {"http://h/.git/HEAD": Probe("", 200, "ref: refs/heads/main", "text/plain", 20)}

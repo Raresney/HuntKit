@@ -16,6 +16,14 @@ from dataclasses import dataclass
 _ALLOWED_SCHEMES = ("http", "https")
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Refuse to follow redirects: a 3xx target could point off the in-scope
+    host (SSRF) or to a non-http(s) scheme, so the probe judges the 3xx itself."""
+
+    def redirect_request(self, *args: object, **kwargs: object) -> None:
+        return None
+
+
 @dataclass(frozen=True)
 class Probe:
     """The outcome of one probe. status is 0 on a transport error or bad scheme."""
@@ -55,10 +63,10 @@ def probe(
         hdrs.setdefault("User-Agent", user_agent)
     req = urllib.request.Request(url, headers=hdrs, method="GET")
 
+    handlers: list[urllib.request.BaseHandler] = [_NoRedirect()]
     if proxy:
-        opener = urllib.request.build_opener(urllib.request.ProxyHandler({scheme: proxy}))
-    else:
-        opener = urllib.request.build_opener()
+        handlers.append(urllib.request.ProxyHandler({scheme: proxy}))
+    opener = urllib.request.build_opener(*handlers)
 
     try:
         # scheme is guarded to http(s) above

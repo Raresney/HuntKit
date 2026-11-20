@@ -48,14 +48,18 @@ def _actuator(p: Probe) -> bool:
     return '"_links"' in p.body or '"status"' in p.body or '"diskSpace"' in p.body
 
 
-def _auth_surface(p: Probe) -> bool:
-    """A privileged path is confirmed by an auth challenge or a login form."""
+def _auth_surface(p: Probe) -> bool | None:
+    """A privileged path is confirmed only by an auth challenge.
+
+    A 401/403 confirms the panel. A 404 rules it out. A 200 is too weak to
+    confirm from a loose body marker (plenty of benign pages contain "login"
+    or a form), so it stays inconclusive (None): a lead, not a confirmation.
+    """
     if p.status in (401, 403):
         return True
-    if p.status == 200:
-        low = p.body.lower()
-        return "<form" in low or "login" in low or "password" in low
-    return False
+    if p.status == 404:
+        return False
+    return None
 
 
 @dataclass(frozen=True)
@@ -63,7 +67,7 @@ class Verifier:
     """A canonical probe path (host-relative) and a response predicate."""
 
     path: str
-    confirm: Callable[[Probe], bool]
+    confirm: Callable[[Probe], bool | None]
     method: str = "GET"
 
 

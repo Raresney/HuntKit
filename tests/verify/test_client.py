@@ -29,6 +29,17 @@ class _Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
+        elif self.path == "/redirect":
+            self.send_response(302)
+            self.send_header("Location", "/landing")
+            self.end_headers()
+        elif self.path == "/landing":
+            body = b"secret"
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
         else:
             self.send_response(404)
             self.end_headers()
@@ -85,6 +96,14 @@ def test_probe_non_http_scheme_is_refused():
 def test_probe_transport_error_yields_status_zero():
     p = probe("http://127.0.0.1:1/")
     assert p.status == 0
+
+
+def test_probe_does_not_follow_redirects(http_server):
+    # A probe must not chase a redirect: the target could point off the
+    # in-scope host (SSRF), so we judge the 3xx itself and never fetch /landing.
+    p = probe(http_server.url("/redirect"))
+    assert p.status in (301, 302, 303, 307, 308)
+    assert p.body != "secret"
 
 
 def test_probe_dataclass_is_frozen():

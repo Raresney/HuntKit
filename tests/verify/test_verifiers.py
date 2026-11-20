@@ -43,6 +43,17 @@ def test_admin_panel_confirms_on_auth_status():
     assert VERIFIERS["admin-panel"].confirm(Probe("http://h/admin", 404, "", "", 0)) is False
 
 
+def test_admin_panel_200_is_inconclusive_not_confirmed():
+    # A 200 page that merely contains "login" is too weak to confirm a panel;
+    # the predicate returns None (a lead), so the engine leaves it unverified.
+    assert (
+        VERIFIERS["admin-panel"].confirm(
+            Probe("http://h/admin", 200, "please login", "text/html", 12)
+        )
+        is None
+    )
+
+
 def test_confirms_returns_none_for_unknown_rule():
     assert confirms("reflect-param", Probe("http://h/", 200, "", "", 0)) is None
 
