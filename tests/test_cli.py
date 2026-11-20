@@ -161,3 +161,41 @@ def test_clean_resets_state(home):
     result = runner.invoke(app, ["clean", "-p", "acme", "--state"])
     assert result.exit_code == 0
     assert "reset" in result.stdout
+
+
+def test_verify_command_writes_results(home, monkeypatch):
+    from huntkit.verify.client import Probe
+
+    runner.invoke(app, ["init", "acme", "-s", "*.example.com"])
+    (home / "acme" / "recon" / "live.txt").write_text("https://www.example.com\n", encoding="utf-8")
+    (home / "acme" / "urls" / "urls.txt").write_text(
+        "https://www.example.com/.git/config\n", encoding="utf-8"
+    )
+
+    def fake(url, **kwargs):
+        if url.endswith("/.git/HEAD"):
+            return Probe(url, 200, "ref: refs/heads/main", "text/plain", 20)
+        return Probe(url, 404, "", "", 0)
+
+    monkeypatch.setattr("huntkit.verify.run.probe", fake)
+    result = runner.invoke(app, ["verify", "-p", "acme"])
+    assert result.exit_code == 0
+    assert (home / "acme" / "scans" / "verify.json").exists()
+
+
+def test_recon_runs_verify_by_default(home, monkeypatch):
+    calls = []
+    monkeypatch.setattr("huntkit.app.main.run_verify", lambda ws, config, **k: calls.append(1) or 0)
+    runner.invoke(app, ["init", "acme", "-s", "*.example.com"])
+    result = runner.invoke(app, ["recon", "example.com", "-p", "acme", "-s", "subs"])
+    assert result.exit_code == 0
+    assert len(calls) == 1
+
+
+def test_no_verify_flag_skips_verification(home, monkeypatch):
+    calls = []
+    monkeypatch.setattr("huntkit.app.main.run_verify", lambda ws, config, **k: calls.append(1) or 0)
+    runner.invoke(app, ["init", "acme", "-s", "*.example.com"])
+    result = runner.invoke(app, ["recon", "example.com", "-p", "acme", "-s", "subs", "--no-verify"])
+    assert result.exit_code == 0
+    assert calls == []

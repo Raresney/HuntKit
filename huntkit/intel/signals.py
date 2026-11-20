@@ -14,12 +14,14 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from enum import IntEnum
 from urllib.parse import parse_qsl, urlsplit
 
 from ..utils.severity import Severity
 
 __all__ = [
     "Severity",
+    "VerifyState",
     "Signal",
     "Rule",
     "url_host",
@@ -30,6 +32,18 @@ __all__ = [
     "signals_from_labels",
     "signals_from_findings",
 ]
+
+
+class VerifyState(IntEnum):
+    """Whether an active probe confirmed a signal's potential."""
+
+    UNVERIFIED = 0
+    CONFIRMED = 1
+    DEAD = 2
+
+    @property
+    def label(self) -> str:
+        return self.name.lower()
 
 
 @dataclass(frozen=True)
@@ -44,9 +58,11 @@ class Signal:
     evidence: str  # a representative hit (first seen)
     playbooks: tuple[str, ...] = ()
     count: int = 1  # how many raw hits collapsed into this signal
+    state: VerifyState = VerifyState.UNVERIFIED
+    verified_evidence: str = ""  # probe evidence when state is confirmed or dead
 
     def to_dict(self) -> dict:
-        return {
+        data = {
             "id": self.id,
             "title": self.title,
             "severity": self.severity.label,
@@ -55,7 +71,11 @@ class Signal:
             "evidence": self.evidence,
             "count": self.count,
             "playbooks": list(self.playbooks),
+            "state": self.state.label,
         }
+        if self.verified_evidence:
+            data["verified_evidence"] = self.verified_evidence
+        return data
 
 
 @dataclass(frozen=True)

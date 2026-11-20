@@ -266,3 +266,35 @@ class TestCli:
     def test_requires_program_when_ambiguous(self, home):
         result = runner.invoke(app, ["report"])
         assert result.exit_code == 2
+
+
+class TestVerificationInReports:
+    @staticmethod
+    def _report_with(tmp_path, state):
+        from huntkit.verify.engine import VerifyResult
+        from huntkit.verify.store import save_results
+
+        ws = Workspace.open("vrfy", base=tmp_path)
+        ws.append_unique("recon/live.txt", ["https://target.example.com"])
+        ws.append_unique("urls/urls.txt", ["https://target.example.com/.git/config"])
+        save_results(ws, {("target.example.com", "git-exposed"): VerifyResult(state, "200 ref")})
+        return build(ws)
+
+    def test_sarif_omits_dead_signals(self, tmp_path):
+        from huntkit.intel import VerifyState
+
+        doc = json.loads(render.to_sarif(self._report_with(tmp_path, VerifyState.DEAD)))
+        assert all(r["ruleId"] != "git-exposed" for r in doc["runs"][0]["results"])
+
+    def test_sarif_marks_confirmed_verification_state(self, tmp_path):
+        from huntkit.intel import VerifyState
+
+        doc = json.loads(render.to_sarif(self._report_with(tmp_path, VerifyState.CONFIRMED)))
+        result = next(r for r in doc["runs"][0]["results"] if r["ruleId"] == "git-exposed")
+        assert result["properties"]["verificationState"] == "confirmed"
+
+    def test_markdown_shows_confirmed_state(self, tmp_path):
+        from huntkit.intel import VerifyState
+
+        md = render.to_markdown(self._report_with(tmp_path, VerifyState.CONFIRMED))
+        assert "confirmed" in md

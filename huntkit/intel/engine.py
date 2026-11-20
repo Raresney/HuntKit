@@ -23,7 +23,7 @@ from pathlib import Path
 from ..core.workspace import Workspace
 from ..knowledge.playbooks import titles as _playbook_titles
 from ..utils import filesystem as fs
-from .signals import Severity, Signal, scan_signals, url_host
+from .signals import Severity, Signal, VerifyState, scan_signals, url_host
 
 # Workspace-relative recon artifacts the engine consumes.
 _LIVE = "recon/live.txt"
@@ -56,13 +56,20 @@ class Priority(IntEnum):
         return self.name.lower()
 
 
+def _live(signals: list[Signal]) -> list[Signal]:
+    """Signals that still count toward scoring: everything a probe did not kill."""
+    return [s for s in signals if s.state is not VerifyState.DEAD]
+
+
 def _priority(signals: list[Signal]) -> Priority:
     """Host priority = worst single signal, nudged up by breadth of surface.
 
     A Critical signal makes the host Critical outright; otherwise a High
     signal (or enough stacked medium/low ones) makes it High, and so on. The
     aggregate thresholds mean a host with many medium issues still rises.
+    Dead signals (a probe ruled them out) do not count.
     """
+    signals = _live(signals)
     if not signals:
         return Priority.LOW
     top = max(s.severity for s in signals)
@@ -83,7 +90,7 @@ class HostIntel:
 
     @property
     def score(self) -> int:
-        return sum(int(s.severity) for s in self.signals)
+        return sum(int(s.severity) for s in _live(self.signals))
 
     @property
     def priority(self) -> Priority:
@@ -151,6 +158,8 @@ class IntelReport:
     def attack_paths(self) -> list[AttackPath]:
         groups: dict[str, list[Signal]] = defaultdict(list)
         for s in self.signals:
+            if s.state is VerifyState.DEAD:
+                continue
             for pb in s.playbooks:
                 groups[pb].append(s)
         paths = [
@@ -205,6 +214,21 @@ def _read_findings(ws: Workspace) -> dict[str, list[str]]:
     }
 
 
+def _apply_verification(ws: Workspace, signals: list[Signal]) -> list[Signal]:
+    """Tag signals with any saved verification state; a no-op when none was run.
+
+    Imported locally so the pure intel layer carries no import-time dependency
+    on the verify package (which probes the target).
+    """
+    from ..verify.engine import apply_results
+    from ..verify.store import load_results
+
+    results = load_results(ws)
+    if not results:
+        return signals
+    return apply_results(signals, results)
+
+
 def analyze(ws: Workspace) -> IntelReport:
     """Score a workspace's recon surface into a prioritised intel report."""
     live = ws.read_lines(_LIVE)
@@ -215,6 +239,7 @@ def analyze(ws: Workspace) -> IntelReport:
     findings = _read_findings(ws)
 
     signals = scan_signals(ports=ports, urls=url_pool, hosts=hosts, findings=findings)
+    signals = _apply_verification(ws, signals)
 
     by_host: dict[str, list[Signal]] = defaultdict(list)
     for s in signals:
